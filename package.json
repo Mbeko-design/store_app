@@ -1,0 +1,18 @@
+{
+  "name": "mizan",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Mizan — phone store, e-wallet cashier & BASATA credit system (offline-first, Arabic/English)",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

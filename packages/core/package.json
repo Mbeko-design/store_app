@@ -1,0 +1,22 @@
+{
+  "name": "@mizan/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Ledger domain: money, chart of accounts, journal entries, wallet operations",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
