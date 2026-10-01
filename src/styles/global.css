@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+html {
+  font-family: var(--font-sans);
+  background: var(--color-page);
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--fs-base);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: var(--lh-tight);
+  margin: 0;
+}
+
+/* Visible keyboard focus everywhere (WCAG) */
+:focus-visible {
+  outline: 2px solid var(--color-navy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Inline values that must stay readable inside RTL text */
+.bidi {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-block;
+}
+
+/* Suppress only iOS zoom-on-focus while keeping >=16px where possible */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Static skeleton (no decorative animation) */
+.skeleton {
+  background: #e7ecf3;
+  border-radius: var(--radius-sm);
+}
+
+/* Reduced motion: everything here is functional-only anyway */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}

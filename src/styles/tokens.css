@@ -1,0 +1,69 @@
+/* ============================================================
+   CASHY design tokens — single source of truth.
+   Colors: navy/white brand; green/blue/red are SEMANTIC only.
+   ============================================================ */
+@theme {
+  /* Brand */
+  --color-navy: #0b1f3a;
+  --color-navy-soft: #16305a;
+  --color-navy-mute: #29466f;
+  --color-page: #f3f6fa;
+  --color-card: #ffffff;
+  --color-line: #e3e8f0;
+
+  /* Text */
+  --color-ink: #0b1f3a;
+  --color-ink-2: #475569;
+  --color-ink-3: #7a879b;
+
+  /* Semantic (positive / cash-neutral / negative) */
+  --color-pos: #16a34a;
+  --color-pos-bg: #ecfdf3;
+  --color-pos-line: #bbe7c9;
+  --color-cash: #2563eb;
+  --color-cash-bg: #eff6ff;
+  --color-cash-line: #c9dcfb;
+  --color-neg: #dc2626;
+  --color-neg-bg: #fef2f2;
+  --color-neg-line: #f5c6c6;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Spacing rhythm: 8px base */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+
+  /* Typography */
+  --font-sans: "Cairo Variable", "Cairo", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.25rem;
+  --fs-2xl: 1.5rem;
+  --fs-3xl: 1.875rem;
+  --lh-tight: 1.3;
+  --lh-normal: 1.7;
+
+  /* Shadows (restrained) */
+  --shadow-card: 0 1px 2px rgb(11 31 58 / 0.06);
+  --shadow-pop: 0 8px 24px rgb(11 31 58 / 0.12);
+}
+
+/* Raw tokens also exposed as plain CSS variables for reuse outside Tailwind */
+:root {
+  --c-navy: var(--color-navy);
+  --c-page: var(--color-page);
+  --c-card: var(--color-card);
+  --c-line: var(--color-line);
+  --r-card: var(--radius-md);
+  --sh-card: var(--shadow-card);
+  --tap: 44px; /* minimum touch target */
+}

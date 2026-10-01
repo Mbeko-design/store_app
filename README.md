@@ -1,86 +1,168 @@
-# ميزان — Mizan
+# CASHY
 
-**Offline-first system for a phone store: e-wallet cashier, BASATA balance distribution, inventory/POS, and daily cash control — with one unified money ledger so nothing gets lost.**
-
-عربي · English
+> دفتر محاسبة شخصي لحسابات فيودافون كاش — **CASHY** is a responsive, Arabic-first (RTL) personal
+> bookkeeping web app for tracking multiple Vodafone Cash accounts in Egypt.
+>
+> **It is NOT a banking app.** CASHY never connects to Vodafone, never executes real transactions,
+> and never claims to. It is a local ledger you fill in manually.
 
 ---
 
-## Why one ledger?
-
-Every movement of value (a wallet transfer, a fee, a BASATA load, a drawer count) is recorded
-as **balanced double-entry postings** across named accounts. Balances are never typed in —
-they are *derived*. Any shortage therefore shows up as a gap between what the ledger says and
-what was counted, instead of silently disappearing.
-
-- All amounts are **integer piastres** (1 EGP = 100 piastres) — no floating-point drift.
-- Entries are **append-only**; corrections are reversal entries, history is never edited.
-- Every entry is validated: `Σ debits = Σ credits > 0` before it can be saved or synced.
-
-## Status
-
-| Step | Module | Status |
-|------|--------|--------|
-| 0 | Foundation: ledger core, sync engine, auth, AR/EN RTL shell | ✅ done |
-| 1 | E-wallet cashier (send/receive/deposit/withdraw, fees, float ledgers) + opening balances | ✅ done |
-| 2 | BASATA distributor credit accounts (load = debt, collections, statements) | ⬜ next |
-| 3 | Inventory + retail POS | ⬜ |
-| 4 | Cash register / Z-read + reconciliation reports | ⬜ |
-| 5 | Mobile app (Expo) with the same sync | ⬜ |
-| 6 | Hardening: backups, audit log, deployment | ⬜ |
-
-## Architecture
-
-```
-mizan/
-├── packages/core        @mizan/core — pure ledger domain (money, accounts, entries,
-│                        wallet ops, sync protocol) + 36 unit tests
-├── apps/server          Fastify + Postgres (PGlite) — auth (scrypt+JWT) and the
-│                        append-only event sync API (push/pull, idempotent by UUID)
-└── apps/web             Vite + React + Tailwind + Dexie (IndexedDB) PWA —
-                         works fully offline, syncs when online
-```
-
-**Sync model:** each device keeps a local SQLite-class database (IndexedDB). New entries are
-queued as unsynced events; on connectivity they are pushed (server dedupes by event UUID) and
-pulled by cursor (`seq`). Because money events are immutable, offline devices merge by plain
-union — no conflicts, no lost entries.
-
-## Quick start
+## How to run
 
 ```bash
-pnpm install
-
-# terminal 1 — sync server (data lands in apps/server/data/)
-pnpm --filter @mizan/server dev
-
-# terminal 2 — web app
-pnpm --filter @mizan/web dev
+pnpm install        # install dependencies
+pnpm dev            # start dev server → http://localhost:5173
 ```
 
-Open http://localhost:5173 — the first account you create becomes the owner account.
-
-Optional configuration: see `apps/server/.env.example` and `apps/web/.env.example`.
-
-## Commands
+Other commands:
 
 ```bash
-pnpm test          # unit tests (ledger invariants, money math, sync validation)
-pnpm typecheck     # strict TypeScript across all packages
-pnpm build         # production build (web emits a PWA with offline service worker)
+pnpm test           # unit tests (accounting + validation) — vitest
+pnpm typecheck      # TypeScript, strict
+pnpm build          # production build → dist/
+pnpm preview        # serve the production build
 ```
 
-## Data & backup
+Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives in the browser
+(IndexedDB).
 
-The server stores everything in **one Postgres data directory**
-(`apps/server/data` by default, or `MIZAN_DATA_DIR`). Back it up by copying that folder
-while the server is stopped, or with `pg_dump`-style tooling after the PGlite → full Postgres
-migration. The web app additionally holds an offline copy on each device and can rebuild its
-state from the server at any time (clear site data → login → full resync).
+---
 
-## Notes
+## Screens
 
-- UI is Arabic-first (RTL) with a full English toggle.
-- EPG amounts display via `Intl` with the `EGP` currency for the active language.
-- The web app installs as a PWA (Android/iOS/desktop) and keeps working with no internet;
-  the sync chip in the header always shows pending/online state.
+| # | Screen | Route | Notes |
+|---|--------|-------|-------|
+| 1 | لوحة التحكم (Dashboard) | `/` | summary cards, deficit meter card, accounts, recent ops, donut overview, quick actions |
+| 2 | الحسابات (Accounts) | `/accounts` | account grid, add/edit, archive (confirm dialog), restore, empty state |
+| 3 | تفاصيل الحساب (Account details) | `/accounts/:id` | balance, remaining limit, category buttons, tabs (ملخص/سحب/إيداع/فلوس) |
+| 4 | سجل العمليات (Category history) | `/history/:category` | big total, filters (date range/account/type), table on desktop, list on mobile, pagination |
+| 5 | إضافة عملية (Add operation) | `/add` | يدوي/تلقائي segmented control, type toggle, source, amount, date-time, note |
+| 6 | ملخص الحسابات (Summary table) | `/summary` | totals + detailed table with expandable rows + pagination |
+| 7 | مقياس العجز (Deficit meter) | `/deficit` | equation, progress bar, itemized inputs, auditable result line |
+| 8 | الإعدادات (Settings) | `/settings` | profile, list items (unimplemented ⇒ disabled "قريباً"), preference cards, data/storage |
+
+Responsive: right-side navy **sidebar on desktop**, collapsible drawer on tablet, compact header +
+**bottom navigation on mobile** (≥44px targets, no horizontal overflow).
+
+---
+
+## Folder structure
+
+```
+src/
+├── accounting/          # ★ THE accounting service — pure, no I/O, no React
+│   ├── types.ts         # Account, Operation, OperationType, CASH_ACCOUNT_ID
+│   ├── totals.ts        # totalsByType / totalsForAccount / grandTotal
+│   ├── deficit.ts       # computeDeficit — the مقياس العجز rule
+│   ├── balance.ts       # accountBalance — opening + history
+│   ├── limit.ts         # remainingLimit — monthly withdrawal limit
+│   └── accounting.test.ts
+├── components/          # reusable UI (AppShell, Sidebar, TopHeader, BottomNav, cards,
+│                        # inputs, dialogs, toasts, tables, charts…). Display ONLY.
+├── pages/               # one file per screen; wires data + accounting → components
+├── hooks/useData.ts     # glue: IndexedDB live queries → accounting results → props
+├── services/            # persistence (Dexie/IndexedDB): accounts, operations, settings, seed
+├── validation/          # phone (01XXXXXXXXX), money parsing (piastres), form validation
+├── utils/               # money (piastres), dates (UTC↔local), formatting, labels, ids
+└── styles/tokens.css    # design tokens (CSS variables) + Tailwind @theme
+```
+
+**Rule enforced throughout:** all accounting math lives in `src/accounting/`. Components receive
+formatted results and never contain formulas.
+
+---
+
+## Accounting model
+
+All money is stored as **integer piastres** (1 EGP = 100 piastres). Timestamps are stored as
+**UTC ISO** and displayed in the device's local timezone. Relationships use stable IDs (never
+phone numbers).
+
+### Account balance (transaction-derived, editable opening)
+
+```
+balance = openingBalance + Σ(deposits) − Σ(withdrawals)
+```
+
+- The **opening balance is an editable input** — changing it immediately shifts the derived
+  balance; recorded history is never rewritten.
+- **`فلوس` (cash) operations never change a wallet balance.** They are cash-side records
+  (optionally tagged to an account for reporting) and are counted only in the deficit meter.
+
+### Deficit meter (مقياس العجز)
+
+```
+Difference = (إجمالي الفلوس + إجمالي الإيداعات) − إجمالي المسحوبات
+   < 0  →  عجز   (red, icon + text)
+   > 0  →  زيادة (green, icon + text)
+   = 0  →  تمام  (green, icon + text)
+```
+
+Every operation is counted **exactly once**, under its own type (enforced by construction in
+`totalsByType` and covered by tests). Status is always shown with **icon + word**, never color
+alone.
+
+### Remaining limit (المتبقي من الليميت)
+
+```
+remaining = monthlyLimit(account) − Σ(withdrawals on that account in the current local month)
+```
+
+- Per-account configurable limit (default **40,000 EGP**), resets every calendar month.
+- May go negative → badge "تجاوز الليميت" (red, icon + text).
+
+### Data entry rules
+
+- Phone: Egyptian mobile `010/011/012/015` + 8 digits; duplicates are blocked per account.
+- سحب / إيداع require a wallet account as source; فلوس defaults to `(Cash) فلوس`.
+- Amounts must be > 0; Arabic-Indic digits and `٬ ٫ ,` separators are accepted.
+- Corrections: no editing/deletion of operations in v1 (see limitations).
+
+---
+
+## Tests
+
+`pnpm test` — 33 assertions covering:
+
+- deficit: negative (عجز) / zero (تمام) / positive (زيادة) cases, computed from raw operations
+- balance: initial opening vs. historical operations; editing opening shifts balance without
+  touching history; cash ops don't change balances
+- no double-counting: every op counted once globally and per account
+- monthly limit: current-month window, reset behavior, ignores deposits/cash, over-limit negative
+- validation: Egyptian phone formats, duplicates, amount parsing (Latin + Arabic digits), form rules
+
+A full browser e2e (Playwright + system Chrome) additionally verifies the whole flow: seed data →
+wipe → add account → record operations → dashboard math → filters → expansion → profile → mobile
+layout (no overflow) → keyboard focus rings.
+
+---
+
+## Known limitations
+
+1. **Local-only storage.** Everything lives in this browser's IndexedDB. There is no server, no
+   sync, no backup. Clearing browser data deletes the ledger. Export/backup is not yet available.
+2. **One device, one browser profile.** Opening the app in another browser shows an empty ledger.
+3. **No operation editing/deletion.** Entries are append-only in v1; fix mistakes by recording the
+   opposite entry (or wait for a future reversal feature).
+4. **Logout is disabled** (shown as "قريباً") — there is no authentication in a single-user local app.
+5. **Auto entry mode** in the add-operation form is disabled ("قريباً") — manual entry only.
+6. **Theme/language:** light theme and Arabic only for now.
+7. **The `فلوس`-doesn't-affect-balance rule** and the meter equation were confirmed for v1; both
+   are isolated in `src/accounting/` so a rule change is a one-file change (plus tests).
+
+---
+
+## Design tokens
+
+`src/styles/tokens.css` defines the full set of CSS variables: brand navy `#0B1F3A`, page
+`#F3F6FA`, semantic green/blue/red (positive / cash / deficit — never used as brand colors),
+radius, 8px-based spacing, shadows, type scale (Cairo font, self-hosted via `@fontsource`).
+Tailwind v4 maps them through `@theme`.
+
+---
+
+## Stack
+
+React 19 · TypeScript (strict) · Vite · Tailwind CSS v4 · Dexie (IndexedDB) · React Router ·
+vitest · Cairo (`@fontsource-variable/cairo`).
