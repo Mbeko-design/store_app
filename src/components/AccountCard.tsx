@@ -61,7 +61,10 @@ export function AccountCard({
 
       <div className="mt-auto flex gap-2 pt-1">
         {showDetails && (
-          <Link to={`/accounts/${account.id}`} className="h-11 flex-1 rounded-md border border-navy bg-navy px-3 text-sm font-bold text-white hover:bg-navy-soft">
+          <Link
+            to={`/accounts/${account.id}`}
+            className="flex h-11 flex-1 items-center justify-center rounded-md border border-navy bg-navy px-3 text-center text-sm font-bold text-white hover:bg-navy-soft"
+          >
             عرض التفاصيل
           </Link>
         )}
