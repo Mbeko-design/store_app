@@ -1,12 +1,12 @@
 import type { Account, Operation, OperationType } from "../accounting/types";
-import { db, allAccounts, allOperations } from "./db";
-import { newId } from "../utils/labels";
-import { setPreviewData } from "./settingsService";
+import { db } from "./db";
+import { getDemoFlag, setDemoFlag } from "./settingsService";
 
 /**
- * PREVIEW / SAMPLE DATA — for design preview only, NEVER final data.
- * Guard: only loads into a completely empty app; afterwards the app shows a
- * persistent banner "بيانات تجريبية للعرض فقط" with a one-click delete.
+ * DEMO / SEED DATA — fake data for the public demo, NEVER presented as real.
+ * Every row carries deterministic ids (demo-*) so seeding is idempotent, and
+ * the app shows a persistent "وضع العرض التجريبي" banner while it is active
+ * (see components/DemoBanner.tsx). A reset button re-creates it fresh.
  */
 
 interface SeedOp {
@@ -15,7 +15,6 @@ interface SeedOp {
   egp: number;
   d: number; // days ago
   h: number; // hour (local)
-  note?: string;
 }
 
 const SEED_OPS: SeedOp[] = [
@@ -58,13 +57,25 @@ const SEED_ACCOUNTS: Array<{ phone: string; label: string; limitEgp: number; ope
   { phone: "01512345678", label: "حساب المحاسبة", limitEgp: 25000, openingEgp: 0 },
 ];
 
+/** Wipe accounts + operations (demo flag and profile are untouched). */
+async function clearDemoRecords(): Promise<void> {
+  await db.transaction("rw", db.accounts, db.operations, async () => {
+    await db.accounts.clear();
+    await db.operations.clear();
+  });
+}
+
+/**
+ * Seed the demo dataset into an EMPTY app and switch demo mode ON.
+ * Throws "not_empty" if real records exist (manual/preview loads only).
+ */
 export async function loadPreviewData(): Promise<void> {
   const hasAccounts = (await db.accounts.count()) > 0;
   const hasOps = (await db.operations.count()) > 0;
-  if (hasAccounts || hasOps) throw new Error("not_empty"); // only into an empty app
+  if (hasAccounts || hasOps) throw new Error("not_empty");
 
-  const accounts: Account[] = SEED_ACCOUNTS.map((s) => ({
-    id: newId(),
+  const accounts: Account[] = SEED_ACCOUNTS.map((s, i) => ({
+    id: `demo-acc-${i + 1}`,
     phone: s.phone,
     label: s.label,
     limitMonthlyPiastres: s.limitEgp * 100,
@@ -78,12 +89,12 @@ export async function loadPreviewData(): Promise<void> {
     const when = new Date(now.getFullYear(), now.getMonth(), now.getDate(), s.h, (i * 7) % 60, 0, 0);
     when.setDate(when.getDate() - s.d);
     return {
-      id: newId(),
+      id: `demo-op-${i + 1}`,
       accountId: accounts[s.a]!.id,
       type: s.t,
       amountPiastres: s.egp * 100,
       occurredAtIso: when.toISOString(),
-      note: s.note ?? "بيانات تجريبية",
+      note: "بيانات تجريبية",
       createdAtIso: when.toISOString(),
     };
   });
@@ -95,21 +106,37 @@ export async function loadPreviewData(): Promise<void> {
   });
 }
 
-/** Delete the preview dataset (only available while the preview flag is set). */
-export async function removePreviewData(): Promise<void> {
-  await clearPreview();
-  await setPreviewData(false);
-}
+let ensurePromise: Promise<void> | null = null;
 
-async function clearPreview(): Promise<void> {
-  await db.transaction("rw", db.accounts, db.operations, async () => {
-    await db.accounts.clear();
-    await db.operations.clear();
+/**
+ * First-run auto-seed: if the demo flag has NEVER been set and the store is
+ * empty → seed demo data. If the user previously wiped (flag "0") → do nothing.
+ * Idempotent: returns a shared promise (safe under StrictMode double-effect)
+ * and uses deterministic ids (safe across concurrent tabs).
+ */
+export function ensureDemoData(): Promise<void> {
+  ensurePromise ??= (async () => {
+    const flag = await getDemoFlag();
+    if (flag !== null) return; // already decided (demo ON, or user-wiped)
+    const hasAccounts = (await db.accounts.count()) > 0;
+    const hasOps = (await db.operations.count()) > 0;
+    if (hasAccounts || hasOps) {
+      await setDemoFlag(false); // pre-existing data → not demo
+      return;
+    }
+    await loadPreviewData();
+  })().catch((e) => {
+    ensurePromise = null;
+    throw e;
   });
+  return ensurePromise;
 }
 
-export async function previewState(): Promise<{ isPreview: boolean; accountCount: number; operationCount: number }> {
-  const [accounts, ops] = await Promise.all([allAccounts(true), allOperations()]);
-  const row = await db.settings.get("previewData");
-  return { isPreview: row?.value === "1", accountCount: accounts.length, operationCount: ops.length };
+/**
+ * "إعادة ضبط البيانات التجريبية" — delete whatever is there and re-create a
+ * fresh demo dataset, demo mode ON.
+ */
+export async function resetDemoData(): Promise<void> {
+  await clearDemoRecords();
+  await loadPreviewData();
 }

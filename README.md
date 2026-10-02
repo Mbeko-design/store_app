@@ -20,8 +20,9 @@ Other commands:
 ```bash
 pnpm test           # unit tests (accounting + validation) — vitest
 pnpm typecheck      # TypeScript, strict
-pnpm build          # production build → dist/
+pnpm build          # production build → dist/   (npm run build works too)
 pnpm preview        # serve the production build
+pnpm icons          # regenerate the PWA icons (scripts/gen-icons.mjs, zero deps)
 ```
 
 Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives in the browser
@@ -132,9 +133,82 @@ remaining = monthlyLimit(account) − Σ(withdrawals on that account in the curr
 - monthly limit: current-month window, reset behavior, ignores deposits/cash, over-limit negative
 - validation: Egyptian phone formats, duplicates, amount parsing (Latin + Arabic digits), form rules
 
-A full browser e2e (Playwright + system Chrome) additionally verifies the whole flow: seed data →
-wipe → add account → record operations → dashboard math → filters → expansion → profile → mobile
-layout (no overflow) → keyboard focus rings.
+A full browser e2e (Playwright + system Chrome) additionally verifies the whole flow: first-run
+demo auto-seed + banner wording → PWA manifest & icons → demo reset button → deep-link refresh →
+wipe (auto-seed must NOT resurrect data) → add account (duplicate phone blocked) → record
+operations (zero amount blocked) → dashboard math → mobile layout (no overflow) → bottom
+navigation → zero console/page errors.
+
+---
+
+## Demo mode (وضع العرض التجريبي)
+
+CASHY is prepared as a **public demo** driven by clearly-marked fake data:
+
+- **First visit auto-seeds** a demo ledger (4 accounts / 30 operations). The seed uses
+  deterministic `demo-*` ids, so it is idempotent and safe across tabs.
+- A persistent **banner** states in Arabic that the data is **وهمية للتجربة فقط** and that the
+  app is **غير متصل بشبكة فيودافون** — it never connects to Vodafone and never executes real
+  transactions.
+- **«إعادة ضبط البيانات التجريبية»** (in the banner and in الإعدادات) deletes everything and
+  re-creates a fresh demo dataset.
+- **«مسح كل البيانات»** wipes the ledger and turns demo mode **off permanently** — the app will
+  *not* auto-seed again afterwards (you start from a genuinely empty ledger).
+
+---
+
+## PWA
+
+- `public/manifest.webmanifest` — name **CASHY**, `theme_color #0B1F3A`,
+  `background_color #F3F6FA`, `dir: rtl`, standalone display.
+- Icons in `public/icons/` (`192`, `512`, `maskable-512`), generated with **zero dependencies**
+  by `scripts/gen-icons.mjs` → `pnpm icons` (white "C" arc on navy, matching `public/icon.svg`).
+- `index.html` links the manifest, an apple-touch-icon, and the `theme-color` meta.
+
+---
+
+## Deploying the public demo (Vercel)
+
+SPA fallback is pre-configured, so refreshing on **any** deep link works:
+
+- `vercel.json` → `rewrites: ["/(.*)", "/index.html"]` (Vercel)
+- `public/_redirects` → `/*  /index.html  200` (Netlify / Cloudflare Pages, copied into `dist/`)
+
+### Option A — Git integration (recommended)
+
+1. Push this repository to GitHub / GitLab / Bitbucket.
+2. Go to [vercel.com/new](https://vercel.com/new) and **Import** the repository.
+3. Vercel auto-detects **Vite** — confirm the defaults:
+   - Framework preset: `Vite`
+   - Build Command: `npm run build` (or `pnpm build`)
+   - Output directory: `dist`
+4. **No environment variables are required** (fully client-side — see `.env.example`).
+5. Press **Deploy**, wait for the green check, open the printed URL.
+
+### Option B — Vercel CLI
+
+```bash
+npm i -g vercel        # or: pnpm add -g vercel
+vercel                 # create/link the project — accept defaults (vercel.json applies)
+vercel --prod          # production deploy
+```
+
+### Post-deploy checklist
+
+- `/` shows the Arabic demo banner **وضع العرض التجريبي** with seeded data.
+- Refreshing `/deficit` (or any route) still loads the app → SPA rewrite works.
+- `/manifest.webmanifest` returns the manifest; `/icons/icon-512.png` → 200.
+
+---
+
+## Security & environment
+
+- The repository contains **no secrets and no API keys** — CASHY calls no external services
+  and stores nothing server-side (all data lives in the visitor's browser, IndexedDB).
+- `.env.example` documents that **zero variables are needed**; real `.env*` files are
+  git-ignored — only `.env.example` is committed.
+- Reminder for contributors: Vite exposes only `VITE_*`-prefixed variables to client code —
+  never place anything sensitive there.
 
 ---
 

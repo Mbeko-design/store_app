@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { AppShell } from "./components/AppShell";
+import { DemoBanner } from "./components/DemoBanner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { PreviewBanner } from "./components/PreviewBanner";
+import { Icon } from "./components/Icon";
 import { ToastProvider } from "./components/Toast";
 import { AccountDetailsPage } from "./pages/AccountDetailsPage";
 import { AccountsPage } from "./pages/AccountsPage";
@@ -11,12 +13,28 @@ import { CategoryHistoryPage } from "./pages/CategoryHistoryPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeficitMeterPage } from "./pages/DeficitMeterPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ensureDemoData } from "./services/seed";
 
-/** Content with the persistent preview-data banner above it. */
+/** Boot splash while first-run demo seeding resolves (local, usually <50ms). */
+function BootSplash() {
+  return (
+    <div className="grid min-h-dvh place-items-center bg-page" role="status" aria-label="جارٍ التحميل">
+      <div className="text-center">
+        <span className="mx-auto grid size-14 place-items-center rounded-xl bg-navy text-2xl font-black text-white" aria-hidden="true">
+          C
+        </span>
+        <p className="mt-3 text-xl font-extrabold text-navy">CASHY</p>
+        <p className="mt-1 text-sm text-ink-3">جارٍ التحضير…</p>
+      </div>
+    </div>
+  );
+}
+
+/** Content with the persistent demo-mode banner above it. */
 function Page() {
   return (
     <ErrorBoundary>
-      <PreviewBanner />
+      <DemoBanner />
       <RoutesContent />
     </ErrorBoundary>
   );
@@ -39,6 +57,16 @@ function RoutesContent() {
 }
 
 export default function App() {
+  // First run: auto-seed clearly-marked demo data for the public demo.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    ensureDemoData()
+      .catch((e) => console.error("demo seed failed:", e))
+      .finally(() => setReady(true));
+  }, []);
+
+  if (!ready) return <BootSplash />;
+
   return (
     <BrowserRouter>
       <ToastProvider>

@@ -4,7 +4,7 @@ import { accountBalance, remainingLimit, type Account, type DeficitResult, type 
 import { computeDeficitFromOps, totalsByType } from "../accounting";
 import { allAccounts, allOperations } from "../services/db";
 import { listOperations, type OperationFilters } from "../services/operationsService";
-import { getProfile, isPreviewData } from "../services/settingsService";
+import { getProfile, isDemoMode } from "../services/settingsService";
 import type { ProfileRow } from "../services/db";
 
 /**
@@ -111,8 +111,9 @@ export function useAccountView(id: string | undefined): AccountViewState {
   return { status: "ready", view: data };
 }
 
-export function usePreviewFlag(): boolean | undefined {
-  return useLiveQuery(() => isPreviewData(), []);
+/** True while the app is running with clearly-marked demo data (banner/reset). */
+export function useDemoMode(): boolean | undefined {
+  return useLiveQuery(() => isDemoMode(), []);
 }
 
 /** matchMedia helper for responsive rendering (tables vs lists on mobile). */
