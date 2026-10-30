@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { AppShell } from "./components/AppShell";
-import { DemoBanner } from "./components/DemoBanner";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Icon } from "./components/Icon";
 import { ToastProvider } from "./components/Toast";
@@ -35,11 +34,10 @@ function BootSplash() {
   );
 }
 
-/** Content with the persistent demo-mode banner above it. */
+/** Content (error-boundary wrapped). Demo-mode banner removed by request — seed stays. */
 function Page() {
   return (
     <ErrorBoundary>
-      <DemoBanner />
       <RoutesContent />
     </ErrorBoundary>
   );

@@ -190,9 +190,10 @@ stock = Σ(stock-in) + Σ(corrections, signed) − Σ(sales)
   conflicts), barcode normalization/duplicates, quantity parsing
 
 A full browser e2e (Playwright + system Chrome) runs two suites: the **money flow** (first-run
-demo auto-seed + banner wording → PWA manifest & icons → demo reset button → deep-link refresh →
-wipe (auto-seed must NOT resurrect data) → add account (duplicate phone blocked) → record
-operations (zero amount blocked) → dashboard math → mobile layout → bottom navigation) and the
+demo auto-seed + no-banner assertion → PWA manifest & icons → demo reset button in الإعدادات →
+deep-link refresh → wipe (auto-seed must NOT resurrect data) → add account (duplicate phone
+blocked) → record operations (zero amount blocked) → dashboard math → mobile layout → bottom
+navigation) and the
 **shop flow** (register by barcode scan → duplicate blocked → POS scan/increment/unknown-barcode →
 receipt #14 → inventory decrement → stock-in → sold-items report → payment filter → mobile
 overflow). Both assert zero console/page errors.
@@ -203,15 +204,17 @@ overflow). Both assert zero console/page errors.
 
 CASHY is prepared as a **public demo** driven by clearly-marked fake data:
 
-- **First visit auto-seeds** a demo ledger (4 accounts / 30 operations). The seed uses
-  deterministic `demo-*` ids, so it is idempotent and safe across tabs.
-- A persistent **banner** states in Arabic that the data is **وهمية للتجربة فقط** and that the
-  app is **غير متصل بشبكة فيودافون** — it never connects to Vodafone and never executes real
-  transactions.
-- **«إعادة ضبط البيانات التجريبية»** (in the banner and in الإعدادات) deletes everything and
-  re-creates a fresh demo dataset.
+- **First visit auto-seeds** a demo ledger (4 accounts / 30 operations / 10 shop products /
+  13 receipts). The seed uses deterministic `demo-*` ids, so it is idempotent and safe across tabs.
+- The **notification banner was removed by request** — no «وضع العرض التجريبي» toast/banner is
+  shown. The demo disclaimer still lives in the sidebar footer (CASHY **لا يتصل بشبكة فودافون**
+  ولا ينفذ عمليات حقيقية), and demo rows stay clearly marked (`demo-*` ids, «بيانات تجريبية» note).
+- **«إعادة ضبط البيانات التجريبية»** (in الإعدادات → البيانات والتخزين) deletes everything and
+  re-creates a fresh demo dataset (money + shop).
 - **«مسح كل البيانات»** wipes the ledger and turns demo mode **off permanently** — the app will
   *not* auto-seed again afterwards (you start from a genuinely empty ledger).
+- **Production cutover:** when the app is switched to production, remove the first-run auto-seed
+  gate in `src/App.tsx` (`ensureDemoData()`) — announced by request before the switch.
 
 ---
 
@@ -253,7 +256,7 @@ vercel --prod          # production deploy
 
 ### Post-deploy checklist
 
-- `/` shows the Arabic demo banner **وضع العرض التجريبي** with seeded data.
+- `/` shows the seeded demo data with **no notification banner** (removed by request).
 - Refreshing `/deficit` (or any route) still loads the app → SPA rewrite works.
 - `/manifest.webmanifest` returns the manifest; `/icons/icon-512.png` → 200.
 

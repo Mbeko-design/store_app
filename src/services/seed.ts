@@ -6,8 +6,8 @@ import { getDemoFlag, setDemoFlag } from "./settingsService";
 /**
  * DEMO / SEED DATA — fake data for the public demo, NEVER presented as real.
  * Every row carries deterministic ids (demo-*) so seeding is idempotent, and
- * the app shows a persistent "وضع العرض التجريبي" banner while it is active
- * (see components/DemoBanner.tsx). A reset button re-creates it fresh.
+ * demo mode is tracked by a tri-state settings flag (see services/settingsService.ts).
+ * Reset lives in الإعدادات («إعادة ضبط البيانات التجريبية») and re-creates the demo fresh.
  */
 
 interface SeedOp {

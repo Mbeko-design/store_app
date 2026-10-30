@@ -44,26 +44,30 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         </div>
 
-        <nav className="mt-2 flex-1 space-y-1 overflow-y-auto px-3" aria-label="أقسام التطبيق">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex min-h-11 items-center gap-3 rounded-md border px-3 text-sm font-bold transition-colors ${
-                  isActive ? "border-white/15 bg-white/12 text-white" : "border-transparent text-white/70 hover:bg-white/8 hover:text-white"
-                }`
-              }
-            >
-              <Icon name={item.icon} size={18} />
-              {item.label}
-            </NavLink>
-          ))}
+        <nav className="mt-2 flex-1 overflow-y-auto px-3" aria-label="أقسام التطبيق">
+          {/* Cash management — the money ledger */}
+          <p className="px-3 pb-1.5 text-[10px] font-extrabold tracking-wider text-white/45">إدارة الكاش</p>
+          <div className="space-y-1">
+            {NAV.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex min-h-11 items-center gap-3 rounded-md border px-3 text-sm font-bold transition-colors ${
+                    isActive ? "border-white/15 bg-white/12 text-white" : "border-transparent text-white/70 hover:bg-white/8 hover:text-white"
+                  }`
+                }
+              >
+                <Icon name={item.icon} size={18} />
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
 
           {/* Shop management — separate section */}
-          <div className="border-t border-white/10 pt-3 mt-3">
+          <div className="mt-3 border-t border-white/10 pt-3">
             <p className="px-3 pb-1.5 text-[10px] font-extrabold tracking-wider text-white/45">إدارة المتجر</p>
             <div className="space-y-1">
               {SHOP_NAV.map((item) => (
