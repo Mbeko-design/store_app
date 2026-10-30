@@ -13,6 +13,11 @@ import { CategoryHistoryPage } from "./pages/CategoryHistoryPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeficitMeterPage } from "./pages/DeficitMeterPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { ShopDashboardPage } from "./pages/ShopDashboardPage";
+import { ProductsPage } from "./pages/ProductsPage";
+import { PosPage } from "./pages/PosPage";
+import { InventoryPage } from "./pages/InventoryPage";
+import { SalesPage } from "./pages/SalesPage";
 import { ensureDemoData } from "./services/seed";
 
 /** Boot splash while first-run demo seeding resolves (local, usually <50ms). */
@@ -51,6 +56,11 @@ function RoutesContent() {
       <Route path="/summary" element={<AccountsSummaryPage />} />
       <Route path="/deficit" element={<DeficitMeterPage />} />
       <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/shop" element={<ShopDashboardPage />} />
+      <Route path="/shop/products" element={<ProductsPage />} />
+      <Route path="/shop/pos" element={<PosPage />} />
+      <Route path="/shop/inventory" element={<InventoryPage />} />
+      <Route path="/shop/sales" element={<SalesPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

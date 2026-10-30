@@ -42,9 +42,15 @@ Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives i
 | 6 | ملخص الحسابات (Summary table) | `/summary` | totals + detailed table with expandable rows + pagination |
 | 7 | مقياس العجز (Deficit meter) | `/deficit` | equation, progress bar, itemized inputs, auditable result line |
 | 8 | الإعدادات (Settings) | `/settings` | profile, list items (unimplemented ⇒ disabled "قريباً"), preference cards, data/storage |
+| 9 | لوحة المتجر (Shop dashboard) | `/shop` | stock value, sales snapshot, restock alerts, recent receipts |
+| 10 | المنتجات (Products) | `/shop/products` | register by **barcode scan**, edit name/price, stock shortcuts, search |
+| 11 | نقطة البيع (POS) | `/shop/pos` | scan → cart → save receipt; unknown barcode opens registration (prefilled) |
+| 12 | المخزون (Inventory) | `/shop/inventory` | stock levels, stock-in (إدخال), physical count (جرد), low/out filters |
+| 13 | المبيعات (Sales) | `/shop/sales` | receipts (expandable lines), **sold-items report**, period/payment filters |
 
-Responsive: right-side navy **sidebar on desktop**, collapsible drawer on tablet, compact header +
-**bottom navigation on mobile** (≥44px targets, no horizontal overflow).
+Responsive: right-side navy **sidebar on desktop** (with a separate «إدارة المتجر» group), collapsible
+drawer on tablet, compact header + **bottom navigation on mobile** (الرئيسية / الحسابات / المتجر /
+إضافة عملية — ≥44px targets, no horizontal overflow).
 
 ---
 
@@ -59,12 +65,22 @@ src/
 │   ├── balance.ts       # accountBalance — opening + history
 │   ├── limit.ts         # remainingLimit — monthly withdrawal limit
 │   └── accounting.test.ts
+├── shop/                # ★ PURE shop logic — stock/receipt/cart math (separate domain)
+│   ├── types.ts         # Product, Receipt, StockMove, PaymentMethod
+│   ├── stock.ts         # stockOnHand / stockValue / status (in + adjust − sale)
+│   ├── sales.ts         # totals, sold-items aggregation, today/month windows
+│   ├── cart.ts          # scan→cart rules (increment, stock limit, conflicts)
+│   └── shop.test.ts
 ├── components/          # reusable UI (AppShell, Sidebar, TopHeader, BottomNav, cards,
 │                        # inputs, dialogs, toasts, tables, charts…). Display ONLY.
+│                        # Shop: BarcodeInput, ProductFormDialog, StockDialog, ShopBadges
 ├── pages/               # one file per screen; wires data + accounting → components
+│                        # Shop: ShopDashboard/Products/Pos/Inventory/Sales
 ├── hooks/useData.ts     # glue: IndexedDB live queries → accounting results → props
-├── services/            # persistence (Dexie/IndexedDB): accounts, operations, settings, seed
-├── validation/          # phone (01XXXXXXXXX), money parsing (piastres), form validation
+├── hooks/useShop.ts     # same for the shop domain (stock table, sold items, totals)
+├── services/            # persistence (Dexie/IndexedDB): accounts, operations, settings,
+│                        # seed + productsService, receiptsService (shop)
+├── validation/          # phone (01XXXXXXXXX), money parsing (piastres), forms, shop/barcode
 ├── utils/               # money (piastres), dates (UTC↔local), formatting, labels, ids
 └── styles/tokens.css    # design tokens (CSS variables) + Tailwind @theme
 ```
@@ -122,9 +138,46 @@ remaining = monthlyLimit(account) − Σ(withdrawals on that account in the curr
 
 ---
 
+## Shop management model (إدارة المتجر)
+
+A **separate section** for a phone shop — its own tables (`products`, `receipts`, `stockMoves`)
+and its own pure module (`src/shop/`). Shop activity **never touches** the Vodafone Cash ledger
+(decision confirmed for v1).
+
+### Barcode workflow (USB scanner, laptop)
+
+- The scanner is a **keyboard-wedge device**: it types the code then `Enter`.
+  `BarcodeInput` listens for Enter → scan handled → field clears and keeps focus.
+- **Register:** scan → form (name, sell price, initial qty). Scanning an already-registered
+  barcode opens a stock-in shortcut instead of failing; duplicates are blocked on submit.
+- **POS:** scan → cart line (re-scan increments qty, clamped to stock) → payment method
+  (نقدًا / فودافون كاش) → save. An **unknown barcode opens the registration dialog prefilled**.
+
+### Stock
+
+```
+stock = Σ(stock-in) + Σ(corrections, signed) − Σ(sales)
+```
+
+- Computed only in `src/shop/stock.ts` from `stockMoves` (each move counted once).
+- Registration writes the initial `in` move; every receipt line writes a `sale` move
+  referencing the receipt; جرد stores the signed difference to the counted quantity.
+- Status: `0 → نفد` (red), `≤5 → منخفض` (amber), else `متوفر` — always icon + word.
+
+### Receipts
+
+- Append-only, **sequential numbers** (`settings.receiptSeq`), lines snapshot name/price/barcode
+  at sale time; totals in integer piastres via `cartTotal`.
+- Stock is re-checked **inside the save transaction** (UI checks are UX only) — an over-stock
+  scan can never write a receipt.
+- Sold-items report = aggregation over receipts (`soldItems`), filterable by period and
+  payment method.
+
+---
+
 ## Tests
 
-`pnpm test` — 33 assertions covering:
+`pnpm test` — 63 assertions covering:
 
 - deficit: negative (عجز) / zero (تمام) / positive (زيادة) cases, computed from raw operations
 - balance: initial opening vs. historical operations; editing opening shifts balance without
@@ -132,12 +185,17 @@ remaining = monthlyLimit(account) − Σ(withdrawals on that account in the curr
 - no double-counting: every op counted once globally and per account
 - monthly limit: current-month window, reset behavior, ignores deposits/cash, over-limit negative
 - validation: Egyptian phone formats, duplicates, amount parsing (Latin + Arabic digits), form rules
+- **shop**: stock math (in + adjust − sale, each move once), stock value/status, receipt totals,
+  sold-items aggregation, payment/period filters, cart rules (scan increments, stock clamped,
+  conflicts), barcode normalization/duplicates, quantity parsing
 
-A full browser e2e (Playwright + system Chrome) additionally verifies the whole flow: first-run
+A full browser e2e (Playwright + system Chrome) runs two suites: the **money flow** (first-run
 demo auto-seed + banner wording → PWA manifest & icons → demo reset button → deep-link refresh →
 wipe (auto-seed must NOT resurrect data) → add account (duplicate phone blocked) → record
-operations (zero amount blocked) → dashboard math → mobile layout (no overflow) → bottom
-navigation → zero console/page errors.
+operations (zero amount blocked) → dashboard math → mobile layout → bottom navigation) and the
+**shop flow** (register by barcode scan → duplicate blocked → POS scan/increment/unknown-barcode →
+receipt #14 → inventory decrement → stock-in → sold-items report → payment filter → mobile
+overflow). Both assert zero console/page errors.
 
 ---
 
@@ -224,6 +282,9 @@ vercel --prod          # production deploy
 6. **Theme/language:** light theme and Arabic only for now.
 7. **The `فلوس`-doesn't-affect-balance rule** and the meter equation were confirmed for v1; both
    are isolated in `src/accounting/` so a rule change is a one-file change (plus tests).
+8. **Shop v1:** receipts are append-only (no delete — fix stock via جرد); sell price only
+   (no cost/profit); product barcode is immutable after registration; no barcode-label printing;
+   shop data is never synced to the money ledger.
 
 ---
 

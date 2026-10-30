@@ -35,13 +35,25 @@ export async function saveProfile(patch: Partial<Pick<ProfileRow, "name" | "emai
 }
 
 /**
- * Remove ALL local data (accounts, operations, settings, profile).
+ * Remove ALL local data (accounts, operations, shop, settings, profile).
  * Irreversible. Marks demo mode OFF so the first-run auto-seed never
  * resurrects data the user deliberately deleted.
  */
 export async function clearAllData(): Promise<void> {
-  await db.transaction("rw", db.accounts, db.operations, db.settings, db.profile, async () => {
-    await Promise.all([db.accounts.clear(), db.operations.clear(), db.settings.clear(), db.profile.clear()]);
-    await db.settings.put({ key: DEMO_KEY, value: "0" });
-  });
+  await db.transaction(
+    "rw",
+    [db.accounts, db.operations, db.products, db.receipts, db.stockMoves, db.settings, db.profile],
+    async () => {
+      await Promise.all([
+        db.accounts.clear(),
+        db.operations.clear(),
+        db.products.clear(),
+        db.receipts.clear(),
+        db.stockMoves.clear(),
+        db.settings.clear(),
+        db.profile.clear(),
+      ]);
+      await db.settings.put({ key: DEMO_KEY, value: "0" });
+    },
+  );
 }

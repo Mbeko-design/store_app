@@ -1,4 +1,5 @@
 import type { Account, Operation, OperationType } from "../accounting/types";
+import type { PaymentMethod, Product, Receipt, StockMove } from "../shop/types";
 import { db } from "./db";
 import { getDemoFlag, setDemoFlag } from "./settingsService";
 
@@ -57,12 +58,129 @@ const SEED_ACCOUNTS: Array<{ phone: string; label: string; limitEgp: number; ope
   { phone: "01512345678", label: "حساب المحاسبة", limitEgp: 25000, openingEgp: 0 },
 ];
 
-/** Wipe accounts + operations (demo flag and profile are untouched). */
+// ---------- Shop demo data (phone shop: products + receipts) ----------
+
+interface SeedProduct {
+  name: string;
+  barcode: string;
+  priceEgp: number;
+  initialQty: number;
+}
+
+/** initialQty always ≥ total sold in SEED_RECEIPTS (stock never goes negative). */
+const SEED_PRODUCTS: SeedProduct[] = [
+  { name: "موبايل Samsung A15", barcode: "622110000001", priceEgp: 8500, initialQty: 6 },
+  { name: "موبايل Redmi Note 13", barcode: "622110000002", priceEgp: 12000, initialQty: 5 },
+  { name: "كفر شفاف iPhone 13", barcode: "622110000003", priceEgp: 120, initialQty: 40 },
+  { name: "زجاج حماية Samsung A15", barcode: "622110000004", priceEgp: 80, initialQty: 50 },
+  { name: "شاحن أصلي 20W", barcode: "622110000005", priceEgp: 450, initialQty: 20 },
+  { name: "كابل USB-C متين", barcode: "622110000006", priceEgp: 150, initialQty: 30 },
+  { name: "باور بانك 10000mAh", barcode: "622110000007", priceEgp: 750, initialQty: 10 },
+  { name: "سماعة بلوتوث", barcode: "622110000008", priceEgp: 600, initialQty: 12 },
+  { name: "خرطوشة شحن 50 جنيه", barcode: "622110000009", priceEgp: 50, initialQty: 60 },
+  { name: "كابل Lightning", barcode: "622110000010", priceEgp: 180, initialQty: 0 }, // نفد من البداية (للعرض)
+];
+
+interface SeedReceipt {
+  d: number; // days ago
+  h: number; // hour (local)
+  method: PaymentMethod;
+  lines: Array<[productIndex: number, qty: number]>;
+}
+
+/** Chronological (oldest first) → receipt numbers increase with time. */
+const SEED_RECEIPTS: SeedReceipt[] = [
+  { d: 18, h: 11, method: "cash", lines: [[8, 10], [2, 3], [5, 3]] },
+  { d: 16, h: 13, method: "vodafone", lines: [[0, 1], [2, 4], [3, 4]] },
+  { d: 14, h: 16, method: "cash", lines: [[3, 6], [4, 2], [8, 15]] },
+  { d: 12, h: 10, method: "cash", lines: [[1, 1], [5, 2], [7, 1]] },
+  { d: 10, h: 12, method: "vodafone", lines: [[2, 5], [6, 1]] },
+  { d: 8, h: 14, method: "cash", lines: [[8, 8], [4, 1], [3, 3]] },
+  { d: 6, h: 11, method: "cash", lines: [[0, 1], [4, 3]] },
+  { d: 5, h: 17, method: "vodafone", lines: [[1, 1], [7, 2]] },
+  { d: 4, h: 15, method: "cash", lines: [[5, 4], [2, 2]] },
+  { d: 3, h: 13, method: "cash", lines: [[0, 2], [6, 1]] },
+  { d: 2, h: 12, method: "vodafone", lines: [[2, 2], [3, 2]] },
+  { d: 0, h: 10, method: "cash", lines: [[0, 1], [2, 2], [8, 5]] }, // today
+  { d: 0, h: 12, method: "vodafone", lines: [[4, 2], [6, 1], [7, 1]] }, // today
+];
+
+/** Products + receipts + derived stock moves (initial "in" + per-line "sale"). */
+function buildShopSeed(now: Date): { products: Product[]; receipts: Receipt[]; moves: StockMove[] } {
+  const products: Product[] = SEED_PRODUCTS.map((s, i) => ({
+    id: `demo-prod-${i + 1}`,
+    barcode: s.barcode,
+    name: s.name,
+    pricePiastres: s.priceEgp * 100,
+    createdAtIso: new Date(now.getTime() - 65 * 86400_000).toISOString(),
+  }));
+
+  const moves: StockMove[] = [];
+  let moveSeq = 0;
+  products.forEach((prod, i) => {
+    const qty = SEED_PRODUCTS[i]!.initialQty;
+    if (qty > 0) {
+      moves.push({
+        id: `demo-move-${++moveSeq}`,
+        productId: prod.id,
+        type: "in",
+        qty,
+        note: "رصيد افتتاحي",
+        createdAtIso: prod.createdAtIso,
+      });
+    }
+  });
+
+  const receipts: Receipt[] = SEED_RECEIPTS.map((r, i) => {
+    const when = new Date(now.getFullYear(), now.getMonth(), now.getDate(), r.h, (i * 11) % 60, 0, 0);
+    when.setDate(when.getDate() - r.d);
+    const lines = r.lines.map(([pi, qty]) => {
+      const prod = products[pi]!;
+      return { productId: prod.id, barcode: prod.barcode, name: prod.name, pricePiastres: prod.pricePiastres, qty };
+    });
+    const createdAtIso = when.toISOString();
+    for (const line of lines) {
+      moves.push({
+        id: `demo-move-${++moveSeq}`,
+        productId: line.productId,
+        type: "sale",
+        qty: line.qty,
+        refReceiptId: `demo-receipt-${i + 1}`,
+        createdAtIso,
+      });
+    }
+    return {
+      id: `demo-receipt-${i + 1}`,
+      number: i + 1,
+      lines,
+      totalPiastres: lines.reduce((s, l) => s + l.pricePiastres * l.qty, 0),
+      paymentMethod: r.method,
+      createdAtIso,
+    } satisfies Receipt;
+  });
+
+  return { products, receipts, moves };
+}
+
+/** Wipe accounts + operations + shop data (demo flag and profile are untouched). */
 async function clearDemoRecords(): Promise<void> {
-  await db.transaction("rw", db.accounts, db.operations, async () => {
+  await db.transaction("rw", [db.accounts, db.operations, db.products, db.receipts, db.stockMoves], async () => {
     await db.accounts.clear();
     await db.operations.clear();
+    await db.products.clear();
+    await db.receipts.clear();
+    await db.stockMoves.clear();
   });
+}
+
+async function storeIsEmpty(): Promise<boolean> {
+  const [accounts, ops, products, receipts] = await Promise.all([
+    db.accounts.count(),
+    db.operations.count(),
+    db.products.count(),
+    db.receipts.count(),
+  ]);
+  return accounts === 0 && ops === 0 && products === 0 && receipts === 0;
 }
 
 /**
@@ -70,9 +188,7 @@ async function clearDemoRecords(): Promise<void> {
  * Throws "not_empty" if real records exist (manual/preview loads only).
  */
 export async function loadPreviewData(): Promise<void> {
-  const hasAccounts = (await db.accounts.count()) > 0;
-  const hasOps = (await db.operations.count()) > 0;
-  if (hasAccounts || hasOps) throw new Error("not_empty");
+  if (!(await storeIsEmpty())) throw new Error("not_empty");
 
   const accounts: Account[] = SEED_ACCOUNTS.map((s, i) => ({
     id: `demo-acc-${i + 1}`,
@@ -99,11 +215,21 @@ export async function loadPreviewData(): Promise<void> {
     };
   });
 
-  await db.transaction("rw", db.accounts, db.operations, db.settings, async () => {
-    await db.accounts.bulkPut(accounts);
-    await db.operations.bulkPut(ops);
-    await db.settings.put({ key: "previewData", value: "1" });
-  });
+  const shop = buildShopSeed(now);
+
+  await db.transaction(
+    "rw",
+    [db.accounts, db.operations, db.products, db.receipts, db.stockMoves, db.settings],
+    async () => {
+      await db.accounts.bulkPut(accounts);
+      await db.operations.bulkPut(ops);
+      await db.products.bulkPut(shop.products);
+      await db.receipts.bulkPut(shop.receipts);
+      await db.stockMoves.bulkPut(shop.moves);
+      await db.settings.put({ key: "previewData", value: "1" });
+      await db.settings.put({ key: "receiptSeq", value: String(SEED_RECEIPTS.length) });
+    },
+  );
 }
 
 let ensurePromise: Promise<void> | null = null;
@@ -118,9 +244,7 @@ export function ensureDemoData(): Promise<void> {
   ensurePromise ??= (async () => {
     const flag = await getDemoFlag();
     if (flag !== null) return; // already decided (demo ON, or user-wiped)
-    const hasAccounts = (await db.accounts.count()) > 0;
-    const hasOps = (await db.operations.count()) > 0;
-    if (hasAccounts || hasOps) {
+    if (!(await storeIsEmpty())) {
       await setDemoFlag(false); // pre-existing data → not demo
       return;
     }

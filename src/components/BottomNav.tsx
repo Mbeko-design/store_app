@@ -4,10 +4,11 @@ import { Icon, type IconName } from "./Icon";
 const ITEMS: Array<{ to: string; label: string; icon: IconName; end?: boolean }> = [
   { to: "/", label: "الرئيسية", icon: "home", end: true },
   { to: "/accounts", label: "الحسابات", icon: "wallet" },
+  { to: "/shop", label: "المتجر", icon: "box", end: true },
   { to: "/add", label: "إضافة عملية", icon: "plus" },
 ];
 
-/** Mobile bottom navigation: 3 items, ≥44px targets, safe-area aware. */
+/** Mobile bottom navigation: 4 items, ≥44px targets, safe-area aware. */
 export function BottomNav() {
   return (
     <nav
@@ -15,7 +16,7 @@ export function BottomNav() {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="التنقل السريع"
     >
-      <ul className="grid grid-cols-3">
+      <ul className="grid grid-cols-4">
         {ITEMS.map((item) => (
           <li key={item.to}>
             <NavLink

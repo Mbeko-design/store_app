@@ -1,13 +1,14 @@
 import Dexie, { type Table } from "dexie";
 import type { Account, Operation } from "../accounting/types";
+import type { Product, Receipt, StockMove } from "../shop/types";
 
 /**
  * CASHY persistence: IndexedDB via Dexie — LOCAL ONLY.
  * No backend, no sync: data lives in this browser/device (see README "Known limitations").
  */
 export interface SettingsRow {
-  key: "previewData";
-  value: string; // "1" | "0"
+  key: "previewData" | "receiptSeq";
+  value: string; // "1" | "0" | sequence number as string
 }
 
 export interface ProfileRow {
@@ -21,6 +22,10 @@ class CashyDB extends Dexie {
   operations!: Table<Operation, string>;
   settings!: Table<SettingsRow, string>;
   profile!: Table<ProfileRow, string>;
+  /** Shop management (separate domain — never touches accounts/operations). */
+  products!: Table<Product, string>;
+  receipts!: Table<Receipt, string>;
+  stockMoves!: Table<StockMove, string>;
 
   constructor() {
     super("cashy");
@@ -29,6 +34,13 @@ class CashyDB extends Dexie {
       operations: "id, accountId, type, occurredAtIso, createdAtIso, [accountId+type]",
       settings: "key",
       profile: "id",
+    });
+    // v2: shop management tables (additive — existing data untouched).
+    this.version(2).stores({
+      settings: "key",
+      products: "id, barcode, createdAtIso",
+      receipts: "id, number, createdAtIso",
+      stockMoves: "id, productId, createdAtIso, [productId+type]",
     });
   }
 }

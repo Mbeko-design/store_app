@@ -26,6 +26,9 @@
   --color-neg: #dc2626;
   --color-neg-bg: #fef2f2;
   --color-neg-line: #f5c6c6;
+  --color-warn: #b45309;
+  --color-warn-bg: #fffbeb;
+  --color-warn-line: #fde68a;
 
   /* Radius */
   --radius-sm: 8px;

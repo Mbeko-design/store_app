@@ -16,6 +16,11 @@ export function pageTitle(pathname: string): string {
   if (pathname === "/summary") return "ملخص الحسابات";
   if (pathname === "/deficit") return "مقياس العجز";
   if (pathname === "/settings") return "الإعدادات";
+  if (pathname === "/shop") return "لوحة المتجر";
+  if (pathname === "/shop/products") return "المنتجات";
+  if (pathname === "/shop/pos") return "نقطة البيع";
+  if (pathname === "/shop/inventory") return "المخزون";
+  if (pathname === "/shop/sales") return "المبيعات";
   return "CASHY";
 }
 
