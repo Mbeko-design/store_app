@@ -27,6 +27,7 @@ export async function saveReceipt(input: SaveReceiptInput): Promise<Receipt> {
     for (const id of productIds) {
       const product = await db.products.get(id);
       if (!product) throw new Error("product_missing");
+      if (product.archivedAtIso) throw new Error("product_archived");
       const moves = await db.stockMoves.where("productId").equals(id).toArray();
       stocks.set(id, stockOnHand(moves, id));
     }

@@ -48,6 +48,11 @@ export function PosPage() {
       setUnknownBarcode(code);
       return;
     }
+    if (product.archivedAtIso) {
+      setScanError(`الصنف «${product.name}» مؤرشف — أعده من قائمة المنتجات قبل البيع`);
+      setUnknownBarcode(null);
+      return;
+    }
     // Any new scan dismisses the "saved receipt" panel → fresh receipt.
     const baseCart = saved ? [] : cart;
     if (saved) setSaved(null);
@@ -73,8 +78,12 @@ export function PosPage() {
       focusScan();
     } catch (err) {
       const code = err instanceof Error ? err.message : "";
-      if (code === "insufficient_stock" || code === "product_missing") {
-        toast.error("الكمية المتاحة تغيّرت — راجع الأسطر وحاول مجددًا");
+      if (code === "insufficient_stock" || code === "product_missing" || code === "product_archived") {
+        toast.error(
+          code === "product_archived"
+            ? "تمت أرشفة أحد الأصناف — أعده من قائمة المنتجات قبل البيع"
+            : "الكمية المتاحة تغيّرت — راجع الأسطر وحاول مجددًا",
+        );
         setCart([]); // stale cart — start clean (live data has refreshed)
       } else {
         toast.error("تعذر حفظ الفاتورة");

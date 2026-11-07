@@ -218,9 +218,10 @@ export function ProductFormDialog({
                 <div className="rounded-md border border-warn-line bg-warn-bg p-3 text-sm text-warn" role="alert">
                   <p className="flex items-center gap-2 font-bold">
                     <Icon name="alert" size={16} />
-                    منتج مسجّل بهذا الباركود: {existing.name}
+                    {existing.archivedAtIso ? "منتج مؤرشف بهذا الباركود: " : "منتج مسجّل بهذا الباركود: "}
+                    {existing.name}
                   </p>
-                  {onStockInShortcut && (
+                  {onStockInShortcut && !existing.archivedAtIso && (
                     <div className="mt-2">
                       <Button
                         type="button"

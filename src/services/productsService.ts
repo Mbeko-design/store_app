@@ -75,6 +75,7 @@ export async function updateProduct(
 ): Promise<Product> {
   const existing = await db.products.get(id);
   if (!existing) throw new Error("not_found");
+  if (existing.archivedAtIso) throw new Error("product_archived");
   const updated: Product = {
     ...existing,
     ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
@@ -85,6 +86,29 @@ export async function updateProduct(
   return updated;
 }
 
+/** Archive a product from the active catalog without changing stock or sales history. */
+export async function archiveProduct(id: string): Promise<void> {
+  await db.transaction("rw", db.products, async () => {
+    const product = await db.products.get(id);
+    if (!product) throw new Error("not_found");
+    if (product.archivedAtIso) return;
+    await db.products.put({ ...product, archivedAtIso: new Date().toISOString() });
+  });
+}
+
+/** Restore an archived product with its original barcode, stock moves, and history. */
+export async function restoreProduct(id: string): Promise<Product> {
+  return db.transaction("rw", db.products, async () => {
+    const product = await db.products.get(id);
+    if (!product) throw new Error("not_found");
+    if (!product.archivedAtIso) return product;
+    const restored = { ...product };
+    delete restored.archivedAtIso;
+    await db.products.put(restored);
+    return restored;
+  });
+}
+
 export async function findByBarcode(rawBarcode: string): Promise<Product | undefined> {
   const barcode = normalizeBarcode(rawBarcode);
   if (!barcode) return undefined;
@@ -92,9 +116,11 @@ export async function findByBarcode(rawBarcode: string): Promise<Product | undef
 }
 
 /** All products, Arabic name order. */
-export async function listProducts(): Promise<Product[]> {
+export async function listProducts(includeArchived = false): Promise<Product[]> {
   const products = await db.products.toArray();
-  return products.sort((a, b) => a.name.localeCompare(b.name, "ar"));
+  return products
+    .filter((product) => includeArchived || !product.archivedAtIso)
+    .sort((a, b) => a.name.localeCompare(b.name, "ar"));
 }
 
 /**
@@ -108,6 +134,7 @@ export async function applyStockCount(
   return db.transaction("rw", db.products, db.stockMoves, async () => {
     const product = await db.products.get(productId);
     if (!product) throw new Error("not_found");
+    if (product.archivedAtIso) throw new Error("product_archived");
     const moves = await db.stockMoves.where("productId").equals(productId).toArray();
     const delta = targetQty - stockOnHand(moves, productId);
     if (delta !== 0) {
@@ -131,6 +158,7 @@ export async function stockIn(productId: string, qtyRaw: string, note?: string):
   return db.transaction("rw", db.products, db.stockMoves, async () => {
     const product = await db.products.get(productId);
     if (!product) throw new Error("not_found");
+    if (product.archivedAtIso) throw new Error("product_archived");
     await db.stockMoves.put({
       id: newId(),
       productId,

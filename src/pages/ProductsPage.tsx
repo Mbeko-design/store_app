@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
 import { Icon } from "../components/Icon";
 import { ProductFormDialog } from "../components/ProductFormDialog";
@@ -8,14 +9,16 @@ import { SkeletonList, LoadingBlock } from "../components/Skeleton";
 import { StockDialog } from "../components/StockDialog";
 import { useToast } from "../components/Toast";
 import { useLoading } from "../hooks/useData";
-import { useShopView } from "../hooks/useShop";
+import { useArchivedProducts, useShopView } from "../hooks/useShop";
 import type { Product } from "../shop/types";
 import { formatEgp } from "../utils/format";
 import { printBarcodeLabel, reserveBarcodePrintWindow } from "../utils/printBarcodeLabel";
+import { archiveProduct, restoreProduct } from "../services/productsService";
 
 /** المنتجات — catalog list, search, register (scan) / edit, stock shortcuts. */
 export function ProductsPage() {
   const view = useShopView();
+  const archivedProducts = useArchivedProducts();
   const loading = useLoading(view);
   const toast = useToast();
 
@@ -24,6 +27,9 @@ export function ProductsPage() {
   const [editing, setEditing] = useState<Product | undefined>(undefined);
   const [presetBarcode, setPresetBarcode] = useState("");
   const [stockTarget, setStockTarget] = useState<{ product: Product; mode: "in" | "count" } | undefined>();
+  const [archiving, setArchiving] = useState<Product | undefined>();
+  const [archiveBusy, setArchiveBusy] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | undefined>();
 
   const rows = useMemo(() => {
     if (!view) return [];
@@ -52,6 +58,32 @@ export function ProductsPage() {
       console.error("barcode label printing failed:", error);
       printWindow.close();
       toast.error("تعذرت طباعة ملصق الباركود.");
+    }
+  };
+
+  const confirmArchive = async () => {
+    if (!archiving) return;
+    setArchiveBusy(true);
+    try {
+      await archiveProduct(archiving.id);
+      toast.success("تم إخفاء المنتج مع الاحتفاظ بسجله");
+      setArchiving(undefined);
+    } catch {
+      toast.error("تعذر أرشفة المنتج");
+    } finally {
+      setArchiveBusy(false);
+    }
+  };
+
+  const restore = async (product: Product) => {
+    setRestoringId(product.id);
+    try {
+      await restoreProduct(product.id);
+      toast.success("تم إرجاع المنتج للمخزون");
+    } catch {
+      toast.error("تعذر إرجاع المنتج");
+    } finally {
+      setRestoringId(undefined);
     }
   };
 
@@ -167,10 +199,51 @@ export function ProductsPage() {
                   <Icon name="barcode" size={14} />
                   طباعة {stock > 0 ? `${stock} ملصق` : "ملصق"}
                 </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="h-9 px-2"
+                  aria-label={`أرشفة ${product.name}`}
+                  onClick={() => setArchiving(product)}
+                >
+                  <Icon name="archive" size={14} />
+                  إخفاء
+                </Button>
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {archivedProducts && archivedProducts.length > 0 && (
+        <section aria-labelledby="archived-products-heading" className="space-y-3">
+          <h2 id="archived-products-heading" className="text-lg font-extrabold">
+            المنتجات المؤرشفة <span className="text-sm font-bold text-ink-3">({archivedProducts.length})</span>
+          </h2>
+          <p className="text-sm text-ink-2">الفواتير وحركات المخزون محفوظة. أعد المنتج إلى القائمة لتتمكن من بيعه مجددًا.</p>
+          <ul className="divide-y divide-line rounded-lg border border-line bg-card">
+            {archivedProducts.map((product) => (
+              <li key={product.id} className="flex flex-wrap items-center gap-3 p-4">
+                <div className="min-w-40 flex-1">
+                  <p className="font-bold">{product.name}</p>
+                  <p dir="ltr" className="mt-0.5 text-start font-mono text-xs text-ink-3">{product.barcode}</p>
+                </div>
+                <span className="rounded-full bg-page px-3 py-1 text-xs font-bold text-ink-3">مؤرشف</span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-9"
+                  loading={restoringId === product.id}
+                  disabled={Boolean(restoringId)}
+                  onClick={() => restore(product)}
+                >
+                  <Icon name="restore" size={14} />
+                  إرجاع للمخزون
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <ProductFormDialog
@@ -189,6 +262,20 @@ export function ProductsPage() {
         product={stockTarget?.product}
         stock={view.rows.find((r) => r.product.id === stockTarget?.product.id)?.stock ?? 0}
         onClose={() => setStockTarget(undefined)}
+      />
+      <ConfirmDialog
+        open={Boolean(archiving)}
+        danger
+        title="إخفاء المنتج من القائمة؟"
+        message={
+          archiving
+            ? `سيختفي «${archiving.name}» من المنتجات والمخزون ولن يقبل بالبيع. الفواتير وحركات المخزون محفوظة، ويمكن إرجاعه من المنتجات المؤرشفة.`
+            : ""
+        }
+        confirmLabel="إخفاء المنتج"
+        loading={archiveBusy}
+        onConfirm={confirmArchive}
+        onClose={() => setArchiving(undefined)}
       />
     </div>
   );

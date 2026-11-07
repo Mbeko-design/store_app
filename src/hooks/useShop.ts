@@ -31,6 +31,10 @@ export function useProducts(): Product[] | undefined {
   return useLiveQuery(() => listProducts(), []);
 }
 
+export function useArchivedProducts(): Product[] | undefined {
+  return useLiveQuery(() => listProducts(true).then((products) => products.filter((product) => product.archivedAtIso)), []);
+}
+
 /** Fixed equipment (رأس المال الثابت) — ماسح باركود, طابعة… */
 export function useAssets(): ShopAsset[] | undefined {
   return useLiveQuery(() => listAssets(), []);

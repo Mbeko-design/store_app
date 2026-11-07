@@ -148,10 +148,13 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
 
 - The scanner is a **keyboard-wedge device**: it types the code then `Enter`.
   `BarcodeInput` listens for Enter → scan handled → field clears and keeps focus.
+- **Products:** archive a product to hide it from the active catalog, inventory, and POS without
+  deleting its receipt or stock history. Archived products can be restored from the products page.
 - **Register:** scan → form (name, wholesale cost, sell price, initial qty). If a product has no
   barcode, leave the field blank; the app generates an internal Code 128 barcode and opens a
-  browser print dialog. Entering an initial quantity of 6 prints six labels, one 38 × 25 mm label
-  per page; quantity 0 skips printing. Stock-in movements also print one label per incoming piece;
+  browser print dialog. Entering an initial quantity of 6 prints six labels, two 38 × 12.5 mm
+  labels per 38 × 25 mm page; an odd final copy uses the first half of a page. Quantity 0 skips
+  printing. Stock-in movements also print one label per incoming piece;
   physical stock counts do not print. Existing labels can be printed again from the product list
   (one per piece currently in stock). The Xprinter XP-233B must be installed as a system printer
   and configured for the matching label stock.

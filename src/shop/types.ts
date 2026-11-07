@@ -24,6 +24,7 @@ export interface Product {
   pricePiastres: number; // sell price — the ONLY price POS shows
   costPiastres?: number; // wholesale price (سعر الجملة) — capital tracking only; missing → 0 (old rows)
   createdAtIso: string;
+  archivedAtIso?: string;
 }
 
 /** Fixed equipment/assets (رأس المال الثابت): barcode scanner, printer, shelves… */
