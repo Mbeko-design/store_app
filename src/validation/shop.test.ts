@@ -14,8 +14,8 @@ describe("barcode rules", () => {
   });
 
   it("creates a scanner-compatible internal Code 128 barcode", () => {
-    const barcode = createInternalBarcode("12345678-abcd-efgh-ijkl", 1_800_000_000_000);
-    expect(barcode).toMatch(/^BT[A-Z0-9]{16}$/);
+    const barcode = createInternalBarcode("12345678-abcd-4abc-8def-1234567890ab");
+    expect(barcode).toMatch(/^\d{12}$/);
     expect(isValidBarcode(barcode)).toBe(true);
   });
 

@@ -12,9 +12,10 @@ export function normalizeBarcode(raw: string): string {
   return raw.trim().replace(/\s+/g, "").toUpperCase();
 }
 
-export function createInternalBarcode(id: string, timestamp = Date.now()): string {
-  const suffix = id.replaceAll("-", "").slice(0, 8).toUpperCase();
-  return `BT${timestamp.toString(36).toUpperCase()}${suffix}`;
+export function createInternalBarcode(id: string): string {
+  const hexId = id.replaceAll("-", "");
+  if (!/^[\da-f]{32}$/i.test(hexId)) throw new Error("invalid_product_id");
+  return (BigInt(`0x${hexId}`) % 1_000_000_000_000n).toString().padStart(12, "0");
 }
 
 export function isValidBarcode(raw: string): boolean {
