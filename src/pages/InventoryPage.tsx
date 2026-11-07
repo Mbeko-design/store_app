@@ -68,7 +68,7 @@ export function InventoryPage() {
   return (
     <div className="space-y-5">
       <section aria-label="إجماليات المخزون" className="grid gap-4 sm:grid-cols-3">
-        <SummaryCard label="إجمالي القطع" amount={`${view.totals.pieces}`} tone="navy" icon="box" sub={`${view.totals.products} منتج`} />
+        <SummaryCard label="إجمالي القطع" amount={`${view.totals.pieces}`} tone="brand" icon="box" sub={`${view.totals.products} منتج`} />
         <SummaryCard label="قيمة المخزون" amount={formatEgp(view.totals.stockValue)} tone="cash" icon="wallet" sub="بسعر البيع" />
         <SummaryCard
           label="تحتاج تزويد"
@@ -88,7 +88,7 @@ export function InventoryPage() {
               aria-pressed={filter === f.id}
               onClick={() => setFilter(f.id)}
               className={`h-9 rounded-md px-4 text-sm font-bold transition-colors ${
-                filter === f.id ? "bg-navy text-white" : "text-ink-2 hover:bg-page"
+                filter === f.id ? "bg-brand text-white" : "text-ink-2 hover:bg-page"
               }`}
             >
               {f.label}

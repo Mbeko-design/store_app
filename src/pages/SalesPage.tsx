@@ -87,7 +87,7 @@ export function SalesPage() {
   }
 
   const chipCls = (active: boolean) =>
-    `h-9 rounded-md px-4 text-sm font-bold transition-colors ${active ? "bg-navy text-white" : "text-ink-2 hover:bg-page"}`;
+    `h-9 rounded-md px-4 text-sm font-bold transition-colors ${active ? "bg-brand text-white" : "text-ink-2 hover:bg-page"}`;
 
   return (
     <div className="space-y-5">
@@ -111,7 +111,7 @@ export function SalesPage() {
 
       {/* Totals of the filtered set */}
       <section aria-label="إجماليات المبيعات" className="grid gap-4 sm:grid-cols-3">
-        <SummaryCard label="عدد الفواتير" amount={`${filtered.length}`} tone="navy" icon="receipt" />
+        <SummaryCard label="عدد الفواتير" amount={`${filtered.length}`} tone="brand" icon="receipt" />
         <SummaryCard label="إجمالي المبيعات" amount={formatEgp(total)} tone="pos" icon="chart" />
         <SummaryCard label="متوسط الفاتورة" amount={formatEgp(average)} tone="cash" icon="table" />
       </section>

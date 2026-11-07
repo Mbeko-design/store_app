@@ -107,7 +107,7 @@ export function AddOperationPage() {
           type="button"
           role="tab"
           aria-selected="true"
-          className="h-10 flex-1 rounded-md bg-navy text-sm font-extrabold text-white"
+          className="h-10 flex-1 rounded-md bg-brand text-sm font-extrabold text-white"
         >
           يدوي
         </button>
@@ -187,7 +187,7 @@ export function AddOperationPage() {
           حفظ العملية
         </Button>
         <p className="text-center text-[11px] text-ink-3">
-          CASHY دفتر تسجيل شخصي — لا ينفذ أي عملية حقيقية على أي شبكة.
+          بساطه تك دفتر تسجيل شخصي — لا ينفذ أي عملية حقيقية على أي شبكة.
         </p>
       </form>
 

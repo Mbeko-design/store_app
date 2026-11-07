@@ -81,7 +81,7 @@ export function StockDialog({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <div className="absolute inset-0 bg-navy/45" onClick={() => !saving && onClose()} aria-hidden="true" />
+      <div className="absolute inset-0 bg-brand/45" onClick={() => !saving && onClose()} aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="true"

@@ -79,7 +79,7 @@ export function AccountDetailsPage() {
       {/* Header: phone + edit, balance + remaining limit (account-level) */}
       <section className="rounded-lg border border-line bg-card p-4 shadow-card md:p-5" aria-label="بيانات الحساب">
         <div className="flex flex-wrap items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-navy/8 text-navy">
+          <span className="grid size-11 shrink-0 place-items-center rounded-md bg-brand/8 text-brand">
             <Icon name="user" size={22} />
           </span>
           <div className="min-w-0 flex-1">
@@ -147,7 +147,7 @@ export function AccountDetailsPage() {
             </>
           );
           const cls = `flex min-h-12 items-center justify-center gap-2 rounded-md border text-sm font-extrabold ${
-            archived ? "border-line bg-page text-ink-3" : "border-line bg-card text-navy hover:bg-page"
+            archived ? "border-line bg-page text-ink-3" : "border-line bg-card text-brand hover:bg-page"
           }`;
           return archived ? (
             <span key={c.type} className={cls} aria-disabled="true" title="الحساب مؤرشف">

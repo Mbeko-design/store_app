@@ -24,10 +24,8 @@ function BootSplash() {
   return (
     <div className="grid min-h-dvh place-items-center bg-page" role="status" aria-label="جارٍ التحميل">
       <div className="text-center">
-        <span className="mx-auto grid size-14 place-items-center rounded-xl bg-navy text-2xl font-black text-white" aria-hidden="true">
-          C
-        </span>
-        <p className="mt-3 text-xl font-extrabold text-navy">CASHY</p>
+        <img src="/logo.png" alt="" aria-hidden="true" className="mx-auto size-14 rounded-xl" />
+        <p className="mt-3 text-xl font-extrabold text-brand">بساطه تك</p>
         <p className="mt-1 text-sm text-ink-3">جارٍ التحضير…</p>
       </div>
     </div>

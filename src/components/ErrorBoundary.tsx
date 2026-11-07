@@ -14,7 +14,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    console.error("CASHY page error:", error, info.componentStack);
+    console.error("BasataTech page error:", error, info.componentStack);
   }
 
   override render(): ReactNode {

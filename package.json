@@ -1,9 +1,9 @@
 {
-  "name": "cashy",
+  "name": "basata-tech",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "CASHY — شخصي: إدارة حسابات فيودافون كاش (Local-only bookkeeping, not a banking app)",
+  "description": "بساطه تك — شخصي: إدارة حسابات فيودافون كاش + إدارة متجر (Local-only, not a banking app)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p tsconfig.json",
-    "icons": "node scripts/gen-icons.mjs"
+    "icons": "python3 scripts/gen-icons.py"
   },
   "dependencies": {
     "@fontsource-variable/cairo": "^5.3.0",

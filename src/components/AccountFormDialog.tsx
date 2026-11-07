@@ -85,7 +85,7 @@ export function AccountFormDialog({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <div className="absolute inset-0 bg-navy/45" onClick={() => !saving && onClose()} aria-hidden="true" />
+      <div className="absolute inset-0 bg-brand/45" onClick={() => !saving && onClose()} aria-hidden="true" />
       <div role="dialog" aria-modal="true" aria-labelledby="acc-form-title" className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-lg border border-line bg-card p-5 shadow-pop">
         <div className="flex items-center justify-between">
           <h2 id="acc-form-title" className="text-lg font-extrabold">

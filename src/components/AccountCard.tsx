@@ -24,7 +24,7 @@ export function AccountCard({
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-line bg-card p-4 shadow-card">
       <div className="flex items-start gap-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-navy/8 text-navy">
+        <span className="grid size-9 shrink-0 place-items-center rounded-md bg-brand/8 text-brand">
           <Icon name="user" size={18} />
         </span>
         <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ export function AccountCard({
         {showDetails && (
           <Link
             to={`/accounts/${account.id}`}
-            className="flex h-11 flex-1 items-center justify-center rounded-md border border-navy bg-navy px-3 text-center text-sm font-bold text-white hover:bg-navy-soft"
+            className="flex h-11 flex-1 items-center justify-center rounded-md border border-brand bg-brand px-3 text-center text-sm font-bold text-white hover:bg-brand-soft"
           >
             عرض التفاصيل
           </Link>

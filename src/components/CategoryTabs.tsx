@@ -24,7 +24,7 @@ export function CategoryTabs({ value, onChange }: { value: DetailTab; onChange: 
             aria-selected={selected}
             onClick={() => onChange(tab.id)}
             className={`min-h-11 whitespace-nowrap border-b-2 px-4 text-sm font-bold transition-colors ${
-              selected ? "border-navy text-navy" : "border-transparent text-ink-2 hover:text-ink"
+              selected ? "border-brand text-brand" : "border-transparent text-ink-2 hover:text-ink"
             }`}
           >
             {tab.label}

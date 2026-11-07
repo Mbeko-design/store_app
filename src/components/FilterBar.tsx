@@ -91,7 +91,7 @@ export function FilterBar({
           <button
             type="button"
             onClick={() => set({ accountId: "" })}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-navy/20 bg-navy/8 px-3 text-xs font-bold text-navy"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-brand/20 bg-brand/8 px-3 text-xs font-bold text-brand"
           >
             حساب محدد: {accounts.find((a) => a.id === filter.accountId)?.phone ?? ""}
             <Icon name="close" size={14} />

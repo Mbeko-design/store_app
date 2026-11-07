@@ -115,7 +115,7 @@ export function SettingsPage() {
       {/* Profile card */}
       <section id="profile" className="rounded-lg border border-line bg-card p-5 shadow-card" aria-labelledby="profile-heading">
         <div className="flex items-center gap-3">
-          <span className="grid size-14 place-items-center rounded-full bg-navy text-lg font-extrabold text-white" aria-hidden="true">
+          <span className="grid size-14 place-items-center rounded-full bg-brand text-lg font-extrabold text-white" aria-hidden="true">
             {initialsOf(profile.name)}
           </span>
           <div>
@@ -181,7 +181,7 @@ export function SettingsPage() {
       <section aria-label="التفضيلات" className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-lg border border-line bg-card p-4">
           <div className="flex items-center gap-2">
-            <span className="grid size-8 place-items-center rounded-md bg-navy/8 text-navy">
+            <span className="grid size-8 place-items-center rounded-md bg-brand/8 text-brand">
               <Icon name="settings" size={16} />
             </span>
             <h3 className="text-sm font-extrabold">المظهر</h3>
@@ -216,7 +216,7 @@ export function SettingsPage() {
           البيانات والتخزين
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-ink-2">
-          CASHY يخزّن بياناتك محليًا في هذا المتصفح فقط (IndexedDB) — لا يوجد خادم ولا مزامنة. حذف بيانات المتصفح يعني
+          بساطه تك يخزّن بياناتك محليًا في هذا المتصفح فقط (IndexedDB) — لا يوجد خادم ولا مزامنة. حذف بيانات المتصفح يعني
           حذف الدفتر بالكامل، لذا احتفظ بنسخة احتياطية من معلوماتك خارج التطبيق.
         </p>
         <p className="mt-2 text-sm text-ink-3">
@@ -261,14 +261,14 @@ export function SettingsPage() {
       {/* About dialog */}
       {aboutOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
-          <div className="absolute inset-0 bg-navy/45" onClick={() => setAboutOpen(false)} aria-hidden="true" />
+          <div className="absolute inset-0 bg-brand/45" onClick={() => setAboutOpen(false)} aria-hidden="true" />
           <div role="dialog" aria-modal="true" aria-labelledby="about-title" className="relative w-full max-w-sm rounded-lg border border-line bg-card p-5 shadow-pop">
             <h2 id="about-title" className="text-lg font-extrabold">
-              حول CASHY
+              حول بساطه تك
             </h2>
             <div className="mt-2 space-y-2 text-sm leading-relaxed text-ink-2">
               <p>
-                <strong>CASHY</strong> دفتر محاسبة شخصي لتدوين حسابات فيودافون كاش: سحب، إيداع، فلوس — بقيد مزدوج بسيط
+                <strong>بساطه تك</strong> دفتر محاسبة شخصي لتدوين حسابات فيودافون كاش: سحب، إيداع، فلوس — بقيد مزدوج بسيط
                 ومحلي.
               </p>
               <p className="font-bold text-neg">ليس تطبيقًا بنكيًا: لا يتصل بشبكة فودافون ولا ينفذ عمليات حقيقية.</p>

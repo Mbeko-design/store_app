@@ -1,6 +1,6 @@
 /**
  * Shop management domain (phone shop) — SEPARATE from the money ledger:
- * products / receipts / stock. Never touches CASHY accounts or operations.
+ * products / receipts / stock. Never touches the money ledger accounts or operations.
  * All money values are integer piastres (same rule as the accounting module).
  */
 

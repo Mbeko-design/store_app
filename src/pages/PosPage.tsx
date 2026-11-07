@@ -258,7 +258,7 @@ export function PosPage() {
                   method === m
                     ? m === "cash"
                       ? "border-cash bg-cash-bg text-cash"
-                      : "border-navy bg-navy/8 text-navy"
+                      : "border-brand bg-brand/8 text-brand"
                     : "border-line bg-card text-ink-2 hover:bg-page"
                 }`}
               >
@@ -271,7 +271,7 @@ export function PosPage() {
 
         <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
           <span className="text-sm font-bold text-ink-2">الإجمالي</span>
-          <span className="bidi text-2xl font-extrabold text-navy">{formatEgp(cartTotal(cart))}</span>
+          <span className="bidi text-2xl font-extrabold text-brand">{formatEgp(cartTotal(cart))}</span>
         </div>
 
         <Button type="button" variant="primary" className="mt-4 w-full" loading={saving} disabled={cart.length === 0} onClick={submit}>

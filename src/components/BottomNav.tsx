@@ -24,7 +24,7 @@ export function BottomNav() {
               end={item.end}
               className={({ isActive }) =>
                 `flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-2 text-[11px] font-bold ${
-                  isActive ? "border-navy text-navy" : "border-transparent text-ink-2"
+                  isActive ? "border-brand text-brand" : "border-transparent text-ink-2"
                 }`
               }
             >

@@ -19,25 +19,24 @@ const SHOP_NAV: Array<{ to: string; label: string; icon: IconName; end?: boolean
 const BOTTOM: Array<{ to: string; label: string; icon: IconName }> = [{ to: "/settings", label: "الإعدادات", icon: "settings" }];
 
 /**
- * Right-side navy sidebar (RTL). Static on desktop (lg+), drawer below.
- * Contains: logo (CASHY), primary nav, settings, logout (disabled — see spec).
+ * Right-side brand-red sidebar (RTL). Static on desktop (lg+), drawer below.
+ * Contains: logo (بساطه تك), primary nav, settings, logout (disabled — see spec).
  */
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <>
-      {open && <div className="fixed inset-0 z-30 bg-navy/45 lg:hidden" onClick={onClose} aria-hidden="true" />}
+      {open && <div className="fixed inset-0 z-30 bg-brand/45 lg:hidden" onClick={onClose} aria-hidden="true" />}
       <aside
-        className={`fixed inset-y-0 right-0 z-40 flex w-64 flex-col bg-navy transition-transform duration-200 lg:static lg:w-60 lg:translate-x-0 ${
+        className={`fixed inset-y-0 right-0 z-40 flex w-64 flex-col bg-brand transition-transform duration-200 lg:static lg:w-60 lg:translate-x-0 ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
         aria-label="القائمة الرئيسية"
       >
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-2.5">
-            <span className="grid size-9 place-items-center rounded-md bg-white text-lg font-black text-navy" aria-hidden="true">
-              C
-            </span>
-            <span className="text-xl font-extrabold tracking-wide text-white">CASHY</span>
+            {/* brand mark: white logo on #E30713 — blends with the brand-red sidebar */}
+            <img src="/logo.png" alt="" aria-hidden="true" className="size-9 rounded-md" />
+            <span className="text-xl font-extrabold tracking-wide text-white">بساطه تك</span>
           </div>
           <button type="button" onClick={onClose} className="grid size-10 place-items-center rounded-md text-white/70 hover:bg-white/10 hover:text-white lg:hidden" aria-label="إغلاق القائمة">
             <Icon name="close" size={20} />
@@ -119,7 +118,7 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
             <span className="ms-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px]">قريباً</span>
           </button>
           <p className="px-3 pb-1 pt-3 text-[11px] leading-relaxed text-white/45">
-            دفتر محاسبة شخصي — CASHY لا يتصل بشبكة فودافون ولا ينفذ عمليات حقيقية.
+            دفتر محاسبة شخصي — بساطه تك لا يتصل بشبكة فودافون ولا ينفذ عمليات حقيقية.
           </p>
         </div>
       </aside>

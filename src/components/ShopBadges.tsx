@@ -21,7 +21,7 @@ export function StockBadge({ status }: { status: StockStatus }) {
 
 const PAY_BADGE: Record<PaymentMethod, { cls: string; icon: IconName }> = {
   cash: { cls: "bg-cash-bg text-cash border-cash-line", icon: "wallet" },
-  vodafone: { cls: "bg-navy/8 text-navy border-navy/20", icon: "phone" },
+  vodafone: { cls: "bg-brand/8 text-brand border-brand/20", icon: "phone" },
 };
 
 export function PaymentBadge({ method }: { method: PaymentMethod }) {

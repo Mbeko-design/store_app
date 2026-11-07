@@ -85,14 +85,14 @@ export function ShopDashboardPage() {
         <SummaryCard
           label="قيمة المخزون"
           amount={formatEgp(view.totals.stockValue)}
-          tone="navy"
+          tone="brand"
           icon="box"
           sub="بسعر البيع"
         />
         <SummaryCard
           label="القطع المتوفرة"
           amount={`${view.totals.pieces}`}
-          tone="navy"
+          tone="brand"
           icon="barcode"
           sub={`${view.totals.products} منتج مسجل`}
         />
@@ -151,7 +151,7 @@ export function ShopDashboardPage() {
               {recent.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-3 p-4">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-navy/8 text-navy">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-md bg-brand/8 text-brand">
                       <Icon name="receipt" size={16} />
                     </span>
                     <div className="min-w-0">

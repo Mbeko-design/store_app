@@ -45,10 +45,10 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
-      <div className="absolute inset-0 bg-navy/45" onClick={() => !loading && onClose()} aria-hidden="true" />
+      <div className="absolute inset-0 bg-brand/45" onClick={() => !loading && onClose()} aria-hidden="true" />
       <div role="dialog" aria-modal="true" aria-labelledby="confirm-title" className="relative w-full max-w-sm rounded-lg border border-line bg-card p-5 shadow-pop">
         <div className="flex items-start gap-3">
-          <span className={`mt-0.5 grid size-9 shrink-0 place-items-center rounded-md ${danger ? "bg-neg-bg text-neg" : "bg-navy/10 text-navy"}`}>
+          <span className={`mt-0.5 grid size-9 shrink-0 place-items-center rounded-md ${danger ? "bg-neg-bg text-neg" : "bg-brand/10 text-brand"}`}>
             <Icon name={danger ? "alert" : "info"} size={20} />
           </span>
           <div className="min-w-0">

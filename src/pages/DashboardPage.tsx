@@ -58,10 +58,10 @@ export function DashboardPage() {
     return (
       <div className="mx-auto max-w-xl">
         <div className="rounded-lg border border-line bg-card p-6 text-center shadow-card">
-          <span className="mx-auto grid size-14 place-items-center rounded-md bg-navy/8 text-navy">
+          <span className="mx-auto grid size-14 place-items-center rounded-md bg-brand/8 text-brand">
             <Icon name="wallet" size={28} />
           </span>
-          <h2 className="mt-3 text-xl font-extrabold">أهلًا بك في CASHY</h2>
+          <h2 className="mt-3 text-xl font-extrabold">أهلًا بك في بساطه تك</h2>
           <p className="mt-2 text-sm leading-relaxed text-ink-2">
             دفتر محاسبة شخصي لحسابات فيودافون كاش — سجّل أول حساب لتبدأ في تتبّع الأرصدة وعمليات السحب والإيداع والفلوس.
           </p>
@@ -74,7 +74,7 @@ export function DashboardPage() {
               تحميل بيانات تجريبية
             </Button>
           </div>
-          <p className="mt-4 text-[11px] text-ink-3">البيانات محفوظة محليًا على هذا الجهاز فقط — CASHY لا يتصل بأي شبكة.</p>
+          <p className="mt-4 text-[11px] text-ink-3">البيانات محفوظة محليًا على هذا الجهاز فقط — بساطه تك لا يتصل بأي شبكة.</p>
         </div>
       </div>
     );
@@ -191,7 +191,7 @@ export function DashboardPage() {
                 <Link
                   key={q.label}
                   to={q.type ? `/add?type=${q.type}` : "/add"}
-                  className="flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-page text-sm font-bold text-navy hover:bg-card"
+                  className="flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-page text-sm font-bold text-brand hover:bg-card"
                 >
                   <Icon name={q.icon} size={16} />
                   {q.label}

@@ -1,13 +1,13 @@
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 
-export type SummaryTone = "pos" | "cash" | "neg" | "navy";
+export type SummaryTone = "pos" | "cash" | "neg" | "brand";
 
 const TONE: Record<SummaryTone, { chip: string; amount: string }> = {
   pos: { chip: "bg-pos-bg text-pos", amount: "text-pos" },
   cash: { chip: "bg-cash-bg text-cash", amount: "text-cash" },
   neg: { chip: "bg-neg-bg text-neg", amount: "text-neg" },
-  navy: { chip: "bg-navy/8 text-navy", amount: "text-ink" },
+  brand: { chip: "bg-brand/8 text-brand", amount: "text-ink" },
 };
 
 /**

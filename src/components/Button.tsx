@@ -4,11 +4,12 @@ import { Icon } from "./Icon";
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "quiet";
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: "bg-navy text-white hover:bg-navy-soft border border-navy",
+  primary: "bg-brand text-white hover:bg-brand-soft border border-brand",
   secondary: "bg-card text-ink border border-line hover:bg-page",
   ghost: "bg-transparent text-ink-2 border border-transparent hover:bg-page",
-  danger: "bg-neg text-white border border-neg hover:bg-neg/90",
-  quiet: "bg-navy/8 text-navy border border-navy/20 hover:bg-navy/15",
+  /* outlined: brand red is the primary CTA, so danger must not be a solid red block */
+  danger: "bg-neg-bg text-neg border border-neg-line hover:border-neg hover:bg-neg/10",
+  quiet: "bg-brand/8 text-brand border border-brand/20 hover:bg-brand/15",
 };
 
 export function buttonCls(variant: ButtonVariant = "primary", extra = ""): string {

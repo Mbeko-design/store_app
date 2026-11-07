@@ -64,7 +64,7 @@ export function DeficitMeter({ result, compact = false }: { result: DeficitResul
         </div>
       </div>
 
-      <Link to="/deficit" className="mt-3 flex h-10 items-center justify-center gap-1 rounded-md border border-line text-sm font-bold text-navy hover:bg-page">
+      <Link to="/deficit" className="mt-3 flex h-10 items-center justify-center gap-1 rounded-md border border-line text-sm font-bold text-brand hover:bg-page">
         عرض تفاصيل المقياس
         <Icon name="chevronLeft" size={16} />
       </Link>

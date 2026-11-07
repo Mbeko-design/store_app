@@ -3,7 +3,8 @@ import type { Account, Operation } from "../accounting/types";
 import type { Product, Receipt, StockMove } from "../shop/types";
 
 /**
- * CASHY persistence: IndexedDB via Dexie — LOCAL ONLY.
+ * Basata Tech (بساطه تك) persistence: IndexedDB via Dexie — LOCAL ONLY.
+ * Note: the internal database name stays "cashy" (renaming would orphan existing data).
  * No backend, no sync: data lives in this browser/device (see README "Known limitations").
  */
 export interface SettingsRow {

@@ -1,20 +1,20 @@
 /* ============================================================
-   CASHY design tokens — single source of truth.
-   Colors: navy/white brand; green/blue/red are SEMANTIC only.
+   بساطه تك (Basata Tech) design tokens — single source of truth.
+   Colors: red/white brand (#E30713); green/blue/red are SEMANTIC only.
    ============================================================ */
 @theme {
   /* Brand */
-  --color-navy: #0b1f3a;
-  --color-navy-soft: #16305a;
-  --color-navy-mute: #29466f;
-  --color-page: #f3f6fa;
+  --color-brand: #e30713;
+  --color-brand-soft: #c60511;
+  --color-brand-mute: #a8050e;
+  --color-page: #ffffff;
   --color-card: #ffffff;
-  --color-line: #e3e8f0;
+  --color-line: #e5e5e5;
 
   /* Text */
-  --color-ink: #0b1f3a;
-  --color-ink-2: #475569;
-  --color-ink-3: #7a879b;
+  --color-ink: #262626;
+  --color-ink-2: #555555;
+  --color-ink-3: #8a8a8a;
 
   /* Semantic (positive / cash-neutral / negative) */
   --color-pos: #16a34a;
@@ -56,13 +56,13 @@
   --lh-normal: 1.7;
 
   /* Shadows (restrained) */
-  --shadow-card: 0 1px 2px rgb(11 31 58 / 0.06);
-  --shadow-pop: 0 8px 24px rgb(11 31 58 / 0.12);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.12);
 }
 
 /* Raw tokens also exposed as plain CSS variables for reuse outside Tailwind */
 :root {
-  --c-navy: var(--color-navy);
+  --c-brand: var(--color-brand);
   --c-page: var(--color-page);
   --c-card: var(--color-card);
   --c-line: var(--color-line);

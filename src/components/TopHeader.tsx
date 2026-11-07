@@ -21,7 +21,7 @@ export function pageTitle(pathname: string): string {
   if (pathname === "/shop/pos") return "نقطة البيع";
   if (pathname === "/shop/inventory") return "المخزون";
   if (pathname === "/shop/sales") return "المبيعات";
-  return "CASHY";
+  return "بساطه تك";
 }
 
 /** Top header: menu button (below lg), page title, avatar + user name. */
@@ -47,7 +47,7 @@ export function TopHeader({ onMenu }: { onMenu: () => void }) {
             <p className="text-sm font-bold leading-tight">{profile?.name ?? "…"}</p>
             <p className="text-[11px] text-ink-3">حساب شخصي</p>
           </div>
-          <span className="grid size-9 place-items-center rounded-full bg-navy text-sm font-extrabold text-white" aria-hidden="true">
+          <span className="grid size-9 place-items-center rounded-full bg-brand text-sm font-extrabold text-white" aria-hidden="true">
             {initialsOf(profile?.name ?? "؟")}
           </span>
         </div>

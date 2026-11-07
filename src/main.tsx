@@ -7,7 +7,7 @@ import App from "./App";
 const root = document.getElementById("root");
 if (!root) throw new Error("root element missing");
 
-document.title = "CASHY";
+document.title = "بساطه تك";
 
 createRoot(root).render(
   <StrictMode>

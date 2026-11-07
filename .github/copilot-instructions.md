@@ -1,4 +1,4 @@
-# Copilot instructions for CASHY
+# Copilot instructions for بساطه تك (Basata Tech)
 
 ## Project overview
 
@@ -29,7 +29,7 @@ There is no `lint` script in this repository. The main validation path is `pnpm 
 
 ## High-level architecture
 
-- `src/App.tsx` is the app bootstrap: it sets up the router, the demo-mode banner, and the app shell. It also triggers first-run demo seeding.
+- `src/App.tsx` is the app bootstrap: it sets up the router and the app shell. It also triggers first-run demo seeding (no banner — notification removed by request).
 - `src/services/db.ts` defines the Dexie database schema and the low-level read helpers for accounts and operations. `src/services/seed.ts` creates the demo ledger; other files in `src/services/` handle settings/profile persistence.
 - `src/hooks/useData.ts` is the integration layer between IndexedDB and the accounting domain. This is where live queries are composed and accounting results are computed before being passed to UI components.
 - `src/accounting/` is the core business logic: totals, deficit calculations, account balances, and per-account monthly limits. These functions are pure and should not import React or browser APIs.

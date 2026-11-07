@@ -7,7 +7,7 @@ import { TopHeader } from "./TopHeader";
 
 /**
  * AppShell — one layout for every screen.
- * Desktop: right navy sidebar + header + content grid.
+ * Desktop: right brand sidebar + header + content grid.
  * Tablet (<lg): sidebar collapses into a drawer (hamburger in header).
  * Mobile (<md): compact header + bottom navigation, content padded above it.
  */

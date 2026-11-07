@@ -1,9 +1,9 @@
-# CASHY
+# بساطه تك (Basata Tech)
 
-> دفتر محاسبة شخصي لحسابات فيودافون كاش — **CASHY** is a responsive, Arabic-first (RTL) personal
+> دفتر محاسبة شخصي لحسابات فيودافون كاش مع إدارة متجر — **بساطه تك (Basata Tech)** is a responsive, Arabic-first (RTL) personal
 > bookkeeping web app for tracking multiple Vodafone Cash accounts in Egypt.
 >
-> **It is NOT a banking app.** CASHY never connects to Vodafone, never executes real transactions,
+> **It is NOT a banking app.** بساطه تك never connects to Vodafone, never executes real transactions,
 > and never claims to. It is a local ledger you fill in manually.
 
 ---
@@ -22,7 +22,7 @@ pnpm test           # unit tests (accounting + validation) — vitest
 pnpm typecheck      # TypeScript, strict
 pnpm build          # production build → dist/   (npm run build works too)
 pnpm preview        # serve the production build
-pnpm icons          # regenerate the PWA icons (scripts/gen-icons.mjs, zero deps)
+pnpm icons          # regenerate the PWA icons (scripts/gen-icons.py, needs Pillow)
 ```
 
 Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives in the browser
@@ -48,7 +48,7 @@ Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives i
 | 12 | المخزون (Inventory) | `/shop/inventory` | stock levels, stock-in (إدخال), physical count (جرد), low/out filters |
 | 13 | المبيعات (Sales) | `/shop/sales` | receipts (expandable lines), **sold-items report**, period/payment filters |
 
-Responsive: right-side navy **sidebar on desktop** (with a separate «إدارة المتجر» group), collapsible
+Responsive: right-side **brand-red sidebar on desktop** (labelled sections «إدارة الكاش» / «إدارة المتجر»), collapsible
 drawer on tablet, compact header + **bottom navigation on mobile** (الرئيسية / الحسابات / المتجر /
 إضافة عملية — ≥44px targets, no horizontal overflow).
 
@@ -202,12 +202,12 @@ overflow). Both assert zero console/page errors.
 
 ## Demo mode (وضع العرض التجريبي)
 
-CASHY is prepared as a **public demo** driven by clearly-marked fake data:
+بساطه تك is prepared as a **public demo** driven by clearly-marked fake data:
 
 - **First visit auto-seeds** a demo ledger (4 accounts / 30 operations / 10 shop products /
   13 receipts). The seed uses deterministic `demo-*` ids, so it is idempotent and safe across tabs.
 - The **notification banner was removed by request** — no «وضع العرض التجريبي» toast/banner is
-  shown. The demo disclaimer still lives in the sidebar footer (CASHY **لا يتصل بشبكة فودافون**
+  shown. The demo disclaimer still lives in the sidebar footer (بساطه تك **لا يتصل بشبكة فودافون**
   ولا ينفذ عمليات حقيقية), and demo rows stay clearly marked (`demo-*` ids, «بيانات تجريبية» note).
 - **«إعادة ضبط البيانات التجريبية»** (in الإعدادات → البيانات والتخزين) deletes everything and
   re-creates a fresh demo dataset (money + shop).
@@ -220,10 +220,11 @@ CASHY is prepared as a **public demo** driven by clearly-marked fake data:
 
 ## PWA
 
-- `public/manifest.webmanifest` — name **CASHY**, `theme_color #0B1F3A`,
-  `background_color #F3F6FA`, `dir: rtl`, standalone display.
-- Icons in `public/icons/` (`192`, `512`, `maskable-512`), generated with **zero dependencies**
-  by `scripts/gen-icons.mjs` → `pnpm icons` (white "C" arc on navy, matching `public/icon.svg`).
+- `public/manifest.webmanifest` — name **بساطه تك**, `theme_color #E30713`,
+  `background_color #FFFFFF`, `dir: rtl`, standalone display.
+- Icons in `public/icons/` (`192`, `512`, `maskable-512`) plus `public/favicon.png` and the
+  `public/logo.png` brand tile, generated with **Pillow** by `scripts/gen-icons.py` → `npm run icons`
+  (white brand mark on #E30713; source master: `scripts/assets/basata-mark.png`).
 - `index.html` links the manifest, an apple-touch-icon, and the `theme-color` meta.
 
 ---
@@ -264,7 +265,7 @@ vercel --prod          # production deploy
 
 ## Security & environment
 
-- The repository contains **no secrets and no API keys** — CASHY calls no external services
+- The repository contains **no secrets and no API keys** — بساطه تك calls no external services
   and stores nothing server-side (all data lives in the visitor's browser, IndexedDB).
 - `.env.example` documents that **zero variables are needed**; real `.env*` files are
   git-ignored — only `.env.example` is committed.
@@ -293,8 +294,9 @@ vercel --prod          # production deploy
 
 ## Design tokens
 
-`src/styles/tokens.css` defines the full set of CSS variables: brand navy `#0B1F3A`, page
-`#F3F6FA`, semantic green/blue/red (positive / cash / deficit — never used as brand colors),
+`src/styles/tokens.css` defines the full set of CSS variables: brand red `#E30713`, page
+`#FFFFFF` (white/neutral theme), semantic green/blue/red (positive / cash / negative — never used
+as brand colors; the `neg` red is distinct from and must not be confused with brand red),
 radius, 8px-based spacing, shadows, type scale (Cairo font, self-hosted via `@fontsource`).
 Tailwind v4 maps them through `@theme`.
 
