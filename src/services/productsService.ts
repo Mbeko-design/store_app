@@ -1,6 +1,6 @@
 import type { Product, StockMove } from "../shop/types";
 import { stockOnHand } from "../shop/stock";
-import { normalizeBarcode, parseStockInQty } from "../validation/shop";
+import { createInternalBarcode, normalizeBarcode, parseStockInQty } from "../validation/shop";
 import { newId } from "../utils/labels";
 import { db } from "./db";
 
@@ -10,6 +10,8 @@ export interface CreateProductInput {
   barcode: string;
   name: string;
   pricePiastres: number;
+  /** Wholesale price (سعر الجملة) — capital tracking only; 0 = unknown. */
+  costPiastres: number;
   /** Initial quantity at registration (0 → no stock move needed). */
   initialQty: number;
 }
@@ -22,17 +24,35 @@ async function assertBarcodeUnique(barcode: string, currentId?: string): Promise
   }
 }
 
+async function createUniqueInternalBarcode(): Promise<{ id: string; barcode: string }> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const id = newId();
+    const barcode = createInternalBarcode(id);
+    try {
+      await assertBarcodeUnique(barcode);
+      return { id, barcode };
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "duplicate_barcode") throw error;
+    }
+  }
+  throw new Error("barcode_generation_failed");
+}
+
 export async function createProduct(input: CreateProductInput): Promise<Product> {
-  const barcode = normalizeBarcode(input.barcode);
-  await assertBarcodeUnique(barcode);
-  const product: Product = {
-    id: newId(),
-    barcode,
-    name: input.name.trim(),
-    pricePiastres: input.pricePiastres,
-    createdAtIso: new Date().toISOString(),
-  };
-  await db.transaction("rw", db.products, db.stockMoves, async () => {
+  const requestedBarcode = normalizeBarcode(input.barcode);
+  return db.transaction("rw", db.products, db.stockMoves, async () => {
+    const generated = requestedBarcode ? undefined : await createUniqueInternalBarcode();
+    const id = generated?.id ?? newId();
+    const barcode = requestedBarcode || generated!.barcode;
+    if (requestedBarcode) await assertBarcodeUnique(barcode);
+    const product: Product = {
+      id,
+      barcode,
+      name: input.name.trim(),
+      pricePiastres: input.pricePiastres,
+      costPiastres: input.costPiastres,
+      createdAtIso: new Date().toISOString(),
+    };
     await db.products.put(product);
     if (input.initialQty > 0) {
       await db.stockMoves.put({
@@ -44,18 +64,22 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
         createdAtIso: new Date().toISOString(),
       } satisfies StockMove);
     }
+    return product;
   });
-  return product;
 }
 
-/** Edit name/price only — barcode is immutable once registered (audit integrity). */
-export async function updateProduct(id: string, patch: { name?: string; pricePiastres?: number }): Promise<Product> {
+/** Edit name/sell-price/wholesale-cost only — barcode is immutable once registered (audit integrity). */
+export async function updateProduct(
+  id: string,
+  patch: { name?: string; pricePiastres?: number; costPiastres?: number },
+): Promise<Product> {
   const existing = await db.products.get(id);
   if (!existing) throw new Error("not_found");
   const updated: Product = {
     ...existing,
     ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
     ...(patch.pricePiastres !== undefined ? { pricePiastres: patch.pricePiastres } : {}),
+    ...(patch.costPiastres !== undefined ? { costPiastres: patch.costPiastres } : {}),
   };
   await db.products.put(updated);
   return updated;

@@ -7,3 +7,4 @@ export * from "./types";
 export * from "./stock";
 export * from "./sales";
 export * from "./cart";
+export * from "./capital";

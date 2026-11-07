@@ -79,7 +79,7 @@ src/
 ├── hooks/useData.ts     # glue: IndexedDB live queries → accounting results → props
 ├── hooks/useShop.ts     # same for the shop domain (stock table, sold items, totals)
 ├── services/            # persistence (Dexie/IndexedDB): accounts, operations, settings,
-│                        # seed + productsService, receiptsService (shop)
+│                        # productsService, receiptsService (shop)
 ├── validation/          # phone (01XXXXXXXXX), money parsing (piastres), forms, shop/barcode
 ├── utils/               # money (piastres), dates (UTC↔local), formatting, labels, ids
 └── styles/tokens.css    # design tokens (CSS variables) + Tailwind @theme
@@ -148,8 +148,15 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
 
 - The scanner is a **keyboard-wedge device**: it types the code then `Enter`.
   `BarcodeInput` listens for Enter → scan handled → field clears and keeps focus.
-- **Register:** scan → form (name, sell price, initial qty). Scanning an already-registered
-  barcode opens a stock-in shortcut instead of failing; duplicates are blocked on submit.
+- **Register:** scan → form (name, wholesale cost, sell price, initial qty). If a product has no
+  barcode, leave the field blank; the app generates an internal Code 128 barcode and opens a
+  browser print dialog for a 50 × 30 mm label. Existing labels can be printed again from the
+  product list. The Xprinter XP-233B must be installed as a system printer and configured for the
+  matching label stock.
+- Wholesale cost is used for رأس المال only; the POS uses and displays the sell price only.
+  Inventory shows wholesale stock value and the detailed list of fixed equipment/assets.
+- Scanning an already-registered barcode opens a stock-in shortcut instead of failing; duplicates
+  are blocked on submit.
 - **POS:** scan → cart line (re-scan increments qty, clamped to stock) → payment method
   (نقدًا / فودافون كاش) → save. An **unknown barcode opens the registration dialog prefilled**.
 
@@ -189,32 +196,14 @@ stock = Σ(stock-in) + Σ(corrections, signed) − Σ(sales)
   sold-items aggregation, payment/period filters, cart rules (scan increments, stock clamped,
   conflicts), barcode normalization/duplicates, quantity parsing
 
-A full browser e2e (Playwright + system Chrome) runs two suites: the **money flow** (first-run
-demo auto-seed + no-banner assertion → PWA manifest & icons → demo reset button in الإعدادات →
-deep-link refresh → wipe (auto-seed must NOT resurrect data) → add account (duplicate phone
-blocked) → record operations (zero amount blocked) → dashboard math → mobile layout → bottom
-navigation) and the
-**shop flow** (register by barcode scan → duplicate blocked → POS scan/increment/unknown-barcode →
-receipt #14 → inventory decrement → stock-in → sold-items report → payment filter → mobile
-overflow). Both assert zero console/page errors.
-
 ---
 
-## Demo mode (وضع العرض التجريبي)
+## Production data behavior
 
-بساطه تك is prepared as a **public demo** driven by clearly-marked fake data:
-
-- **First visit auto-seeds** a demo ledger (4 accounts / 30 operations / 10 shop products /
-  13 receipts). The seed uses deterministic `demo-*` ids, so it is idempotent and safe across tabs.
-- The **notification banner was removed by request** — no «وضع العرض التجريبي» toast/banner is
-  shown. The demo disclaimer still lives in the sidebar footer (بساطه تك **لا يتصل بشبكة فودافون**
-  ولا ينفذ عمليات حقيقية), and demo rows stay clearly marked (`demo-*` ids, «بيانات تجريبية» note).
-- **«إعادة ضبط البيانات التجريبية»** (in الإعدادات → البيانات والتخزين) deletes everything and
-  re-creates a fresh demo dataset (money + shop).
-- **«مسح كل البيانات»** wipes the ledger and turns demo mode **off permanently** — the app will
-  *not* auto-seed again afterwards (you start from a genuinely empty ledger).
-- **Production cutover:** when the app is switched to production, remove the first-run auto-seed
-  gate in `src/App.tsx` (`ensureDemoData()`) — announced by request before the switch.
+- The app does not create sample records for new users.
+- Updates preserve all existing accounts, operations, products, receipts, settings, and profile
+  information in IndexedDB. No startup migration deletes local records.
+- Data remains local to each browser/device in IndexedDB; it does not sync between devices.
 
 ---
 
@@ -229,7 +218,7 @@ overflow). Both assert zero console/page errors.
 
 ---
 
-## Deploying the public demo (Vercel)
+## Deploying to production (Vercel)
 
 SPA fallback is pre-configured, so refreshing on **any** deep link works:
 
@@ -257,7 +246,7 @@ vercel --prod          # production deploy
 
 ### Post-deploy checklist
 
-- `/` shows the seeded demo data with **no notification banner** (removed by request).
+- `/` opens to an empty ledger for new users, with no sample data. Existing local data remains intact after updates.
 - Refreshing `/deficit` (or any route) still loads the app → SPA rewrite works.
 - `/manifest.webmanifest` returns the manifest; `/icons/icon-512.png` → 200.
 

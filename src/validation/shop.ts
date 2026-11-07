@@ -12,6 +12,11 @@ export function normalizeBarcode(raw: string): string {
   return raw.trim().replace(/\s+/g, "").toUpperCase();
 }
 
+export function createInternalBarcode(id: string, timestamp = Date.now()): string {
+  const suffix = id.replaceAll("-", "").slice(0, 8).toUpperCase();
+  return `BT${timestamp.toString(36).toUpperCase()}${suffix}`;
+}
+
 export function isValidBarcode(raw: string): boolean {
   return BARCODE_RE.test(normalizeBarcode(raw));
 }
@@ -20,12 +25,15 @@ export interface ProductFormInput {
   barcode: string;
   name: string;
   priceEgp: string;
+  /** Wholesale price (سعر الجملة) is recorded for capital tracking only. */
+  costEgp: string;
 }
 
 export interface ProductFormValues {
   barcode: string;
   name: string;
   pricePiastres: number;
+  costPiastres: number;
 }
 
 /**
@@ -36,13 +44,12 @@ export function validateProductForm(
   input: ProductFormInput,
   existing: Array<{ id: string; barcode: string }>,
   currentId?: string,
-): { errors: { barcode?: string; name?: string; price?: string }; values?: ProductFormValues } {
-  const errors: { barcode?: string; name?: string; price?: string } = {};
+): { errors: { barcode?: string; name?: string; price?: string; cost?: string }; values?: ProductFormValues } {
+  const errors: { barcode?: string; name?: string; price?: string; cost?: string } = {};
 
   const barcode = normalizeBarcode(input.barcode);
-  if (!barcode) errors.barcode = "الباركود مطلوب — امسحه بالماسح";
-  else if (!isValidBarcode(barcode)) errors.barcode = "باركود غير صالح (3–40 رمزًا)";
-  else if (existing.some((p) => p.barcode === barcode && p.id !== currentId)) {
+  if (barcode && !isValidBarcode(barcode)) errors.barcode = "باركود غير صالح (3–40 رمزًا)";
+  else if (barcode && existing.some((p) => p.barcode === barcode && p.id !== currentId)) {
     errors.barcode = "هذا الباركود مسجل لمنتج آخر";
   }
 
@@ -53,8 +60,19 @@ export function validateProductForm(
   const price = parseAmountInput(input.priceEgp);
   if (!price.ok) errors.price = price.error;
 
+  const costRaw = input.costEgp.trim();
+  let costPiastres = 0;
+  if (!costRaw) {
+    errors.cost = "سعر الجملة مطلوب";
+  } else if (costRaw !== "0") {
+    const cost = parseAmountInput(costRaw);
+    if (!cost.ok) errors.cost = cost.error;
+    else costPiastres = cost.piastres;
+  }
+
   if (Object.keys(errors).length > 0) return { errors };
-  return { errors, values: { barcode, name, pricePiastres: price.ok ? price.piastres : 0 } };
+  if (!price.ok) return { errors };
+  return { errors, values: { barcode, name, pricePiastres: price.piastres, costPiastres } };
 }
 
 /** Positive integer quantity (stock-in / initial stock). */

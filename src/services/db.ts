@@ -1,6 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type { Account, Operation } from "../accounting/types";
-import type { Product, Receipt, StockMove } from "../shop/types";
+import type { Product, Receipt, ShopAsset, StockMove } from "../shop/types";
 
 /**
  * Basata Tech (بساطه تك) persistence: IndexedDB via Dexie — LOCAL ONLY.
@@ -27,6 +27,7 @@ class CashyDB extends Dexie {
   products!: Table<Product, string>;
   receipts!: Table<Receipt, string>;
   stockMoves!: Table<StockMove, string>;
+  shopAssets!: Table<ShopAsset, string>;
 
   constructor() {
     super("cashy");
@@ -42,6 +43,13 @@ class CashyDB extends Dexie {
       products: "id, barcode, createdAtIso",
       receipts: "id, number, createdAtIso",
       stockMoves: "id, productId, createdAtIso, [productId+type]",
+    });
+    // v3: fixed equipment/assets (رأس المال الثابت) — additive again.
+    this.version(3).stores({
+      products: "id, barcode, createdAtIso",
+      receipts: "id, number, createdAtIso",
+      stockMoves: "id, productId, createdAtIso, [productId+type]",
+      shopAssets: "id, createdAtIso",
     });
   }
 }

@@ -10,7 +10,6 @@ import { LoadingBlock, SkeletonCard } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 import { useLedger } from "../hooks/useData";
 import { archiveAccount, restoreAccount } from "../services/accountsService";
-import { loadPreviewData } from "../services/seed";
 
 /**
  * Accounts: grid of cards + add / edit / archive (with confirmation) / restore.
@@ -38,7 +37,7 @@ export function AccountsPage() {
     );
   }
 
-  const { views, archivedViews, archivedAccounts, operations } = ledger;
+  const { views, archivedViews, archivedAccounts } = ledger;
   const editing = views.find((v) => v.account.id === editingId)?.account;
   const archiving = views.find((v) => v.account.id === archivingId);
   const restoring = archivedAccounts.find((a) => a.id === restoringId);
@@ -75,15 +74,6 @@ export function AccountsPage() {
       toast.error("تعذر إرجاع الحساب");
     } finally {
       setRestoringId(null);
-    }
-  };
-
-  const loadPreview = async () => {
-    try {
-      await loadPreviewData();
-      toast.success("تم تحميل بيانات تجريبية للعرض");
-    } catch {
-      toast.error("لا يمكن التحميل: البيانات ليست فارغة");
     }
   };
 
@@ -126,13 +116,6 @@ export function AccountsPage() {
               </Button>
             }
           />
-          {operations.length === 0 && (
-            <div className="text-center">
-              <Button type="button" variant="secondary" onClick={loadPreview}>
-                تحميل بيانات تجريبية للعرض فقط
-              </Button>
-            </div>
-          )}
         </div>
       ) : (
         <>

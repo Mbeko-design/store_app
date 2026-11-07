@@ -6,15 +6,18 @@ import { ProductFormDialog } from "../components/ProductFormDialog";
 import { StockBadge } from "../components/ShopBadges";
 import { SkeletonList, LoadingBlock } from "../components/Skeleton";
 import { StockDialog } from "../components/StockDialog";
+import { useToast } from "../components/Toast";
 import { useLoading } from "../hooks/useData";
 import { useShopView } from "../hooks/useShop";
 import type { Product } from "../shop/types";
 import { formatEgp } from "../utils/format";
+import { printBarcodeLabel, reserveBarcodePrintWindow } from "../utils/printBarcodeLabel";
 
 /** المنتجات — catalog list, search, register (scan) / edit, stock shortcuts. */
 export function ProductsPage() {
   const view = useShopView();
   const loading = useLoading(view);
+  const toast = useToast();
 
   const [query, setQuery] = useState("");
   const [formOpen, setFormOpen] = useState(false);
@@ -35,6 +38,21 @@ export function ProductsPage() {
     setEditing(undefined);
     setPresetBarcode("");
     setFormOpen(true);
+  };
+
+  const printBarcode = async (product: Product) => {
+    const printWindow = reserveBarcodePrintWindow();
+    if (!printWindow) {
+      toast.error("اسمح بالنوافذ المنبثقة لطباعة ملصق الباركود.");
+      return;
+    }
+    try {
+      await printBarcodeLabel(printWindow, product);
+    } catch (error) {
+      console.error("barcode label printing failed:", error);
+      printWindow.close();
+      toast.error("تعذرت طباعة ملصق الباركود.");
+    }
   };
 
   if (loading) {
@@ -139,6 +157,10 @@ export function ProductsPage() {
                 >
                   <Icon name="edit" size={14} />
                   تعديل
+                </Button>
+                <Button type="button" variant="secondary" className="h-9 px-2" onClick={() => printBarcode(product)}>
+                  <Icon name="barcode" size={14} />
+                  طباعة باركود
                 </Button>
               </div>
             </li>

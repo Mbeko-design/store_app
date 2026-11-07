@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { DeficitMeter } from "../components/DeficitMeter";
 import { DonutChart } from "../components/DonutChart";
-import { Button, buttonCls } from "../components/Button";
+import { buttonCls } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { Icon, type IconName } from "../components/Icon";
 import { LoadingBlock, SkeletonCard, SkeletonList } from "../components/Skeleton";
@@ -9,8 +9,6 @@ import { SummaryCard } from "../components/SummaryCard";
 import { AccountCard } from "../components/AccountCard";
 import { useLedger } from "../hooks/useData";
 import { grandTotal } from "../accounting";
-import { loadPreviewData } from "../services/seed";
-import { useToast } from "../components/Toast";
 import { formatEgp, formatDateTime } from "../utils/format";
 import { CASH_SOURCE_LABEL, TYPE_LABEL, TYPE_STYLE } from "../utils/labels";
 
@@ -23,7 +21,6 @@ const QUICK: Array<{ type: "withdraw" | "deposit" | "cash" | ""; label: string; 
 
 export function DashboardPage() {
   const ledger = useLedger();
-  const toast = useToast();
   const navigate = useNavigate();
 
   if (!ledger) {
@@ -45,15 +42,6 @@ export function DashboardPage() {
   const accountLabels = new Map<string, string>(accounts.map((a) => [a.id, `${a.phone}${a.label ? ` — ${a.label}` : ""}`]));
   const recent = operations.slice(0, 6);
 
-  const loadPreview = async () => {
-    try {
-      await loadPreviewData();
-      toast.success("تم تحميل بيانات تجريبية للعرض");
-    } catch {
-      toast.error("لا يمكن التحميل: البيانات ليست فارغة");
-    }
-  };
-
   if (isEmpty) {
     return (
       <div className="mx-auto max-w-xl">
@@ -65,14 +53,11 @@ export function DashboardPage() {
           <p className="mt-2 text-sm leading-relaxed text-ink-2">
             دفتر محاسبة شخصي لحسابات فيودافون كاش — سجّل أول حساب لتبدأ في تتبّع الأرصدة وعمليات السحب والإيداع والفلوس.
           </p>
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="mt-5 flex justify-center">
             <Link to="/accounts" className={buttonCls("primary")}>
               <Icon name="plus" size={16} />
               إضافة أول حساب
             </Link>
-            <Button type="button" variant="secondary" onClick={loadPreview}>
-              تحميل بيانات تجريبية
-            </Button>
           </div>
           <p className="mt-4 text-[11px] text-ink-3">البيانات محفوظة محليًا على هذا الجهاز فقط — بساطه تك لا يتصل بأي شبكة.</p>
         </div>

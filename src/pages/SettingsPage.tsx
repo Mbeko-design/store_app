@@ -7,9 +7,8 @@ import { Field, inputCls } from "../components/Field";
 import { Icon } from "../components/Icon";
 import { LoadingBlock } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
-import { useAllOperations, useAccounts, useDemoMode, useProfile } from "../hooks/useData";
+import { useAllOperations, useAccounts, useProfile } from "../hooks/useData";
 import { clearAllData, saveProfile } from "../services/settingsService";
-import { loadPreviewData, resetDemoData } from "../services/seed";
 import { initialsOf } from "../utils/format";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -19,7 +18,6 @@ export function SettingsPage() {
   const profile = useProfile();
   const accounts = useAccounts(true);
   const operations = useAllOperations();
-  const isDemo = useDemoMode();
   const toast = useToast();
 
   const [name, setName] = useState("");
@@ -68,24 +66,6 @@ export function SettingsPage() {
       toast.error("تعذر حفظ الملف الشخصي");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const loadPreview = async () => {
-    try {
-      await loadPreviewData();
-      toast.success("تم تحميل بيانات تجريبية للعرض");
-    } catch {
-      toast.error("لا يمكن التحميل: البيانات ليست فارغة");
-    }
-  };
-
-  const resetDemo = async () => {
-    try {
-      await resetDemoData();
-      toast.success("تمت إعادة ضبط البيانات التجريبية");
-    } catch {
-      toast.error("تعذر إعادة ضبط البيانات التجريبية");
     }
   };
 
@@ -222,30 +202,16 @@ export function SettingsPage() {
         <p className="mt-2 text-sm text-ink-3">
           الحالي: <span className="bidi">{accounts.length}</span> حساب ·{" "}
           <span className="bidi">{operations.length}</span> عملية
-          {isDemo ? " · وضع العرض التجريبي" : ""}
         </p>
 
         <div className="mt-4 flex flex-wrap gap-3">
-          {isDemo ? (
-            <Button type="button" variant="secondary" onClick={resetDemo}>
-              <Icon name="restore" size={16} />
-              إعادة ضبط البيانات التجريبية
-            </Button>
-          ) : (
-            accounts.length === 0 &&
-            operations.length === 0 && (
-              <Button type="button" variant="secondary" onClick={loadPreview}>
-                تحميل بيانات تجريبية (للعرض فقط)
-              </Button>
-            )
-          )}
           <Button type="button" variant="danger" onClick={() => setClearOpen(true)}>
             مسح كل البيانات
           </Button>
         </div>
       </section>
 
-      {accounts.length === 0 && operations.length === 0 && !isDemo && (
+      {accounts.length === 0 && operations.length === 0 && (
         <EmptyState
           icon="wallet"
           title="دفترك فارغ"

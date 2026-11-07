@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidBarcode, normalizeBarcode, parseCountQty, parseStockInQty, validateProductForm } from "./shop";
+import { createInternalBarcode, isValidBarcode, normalizeBarcode, parseCountQty, parseStockInQty, validateProductForm } from "./shop";
 
 describe("barcode rules", () => {
   it("normalizes scanner input (trim, strip spaces, uppercase)", () => {
@@ -11,6 +11,12 @@ describe("barcode rules", () => {
     expect(isValidBarcode("6221100000011")).toBe(true);
     expect(isValidBarcode("ABC-123_x")).toBe(true);
     expect(isValidBarcode("123")).toBe(true);
+  });
+
+  it("creates a scanner-compatible internal Code 128 barcode", () => {
+    const barcode = createInternalBarcode("12345678-abcd-efgh-ijkl", 1_800_000_000_000);
+    expect(barcode).toMatch(/^BT[A-Z0-9]{16}$/);
+    expect(isValidBarcode(barcode)).toBe(true);
   });
 
   it("rejects empty / too short / bad characters", () => {
@@ -26,31 +32,32 @@ describe("validateProductForm", () => {
 
   it("accepts a valid new product and returns normalized values", () => {
     const { errors, values } = validateProductForm(
-      { barcode: " 6221100000099 ", name: "  كفر شفاف  ", priceEgp: "120" },
+      { barcode: " 6221100000099 ", name: "  كفر شفاف  ", priceEgp: "120", costEgp: "90" },
       existing,
     );
     expect(errors).toEqual({});
-    expect(values).toEqual({ barcode: "6221100000099", name: "كفر شفاف", pricePiastres: 12_000 });
+    expect(values).toEqual({ barcode: "6221100000099", name: "كفر شفاف", pricePiastres: 12_000, costPiastres: 9_000 });
   });
 
   it("blocks duplicate barcode (except when editing the same product)", () => {
     expect(
-      validateProductForm({ barcode: "6221100000011", name: "x", priceEgp: "10" }, existing).errors.barcode,
+      validateProductForm({ barcode: "6221100000011", name: "x", priceEgp: "10", costEgp: "5" }, existing).errors.barcode,
     ).toMatch(/مسجل/);
     expect(
-      validateProductForm({ barcode: "6221100000011", name: "x", priceEgp: "10" }, existing, "p1").errors.barcode,
+      validateProductForm({ barcode: "6221100000011", name: "x", priceEgp: "10", costEgp: "5" }, existing, "p1").errors.barcode,
     ).toBeUndefined();
   });
 
-  it("reports field errors for missing barcode/name and bad price", () => {
-    const { errors } = validateProductForm({ barcode: "", name: "", priceEgp: "0" }, []);
-    expect(errors.barcode).toBeTruthy();
+  it("allows an empty barcode for internal generation and reports other required fields", () => {
+    const { errors } = validateProductForm({ barcode: "", name: "", priceEgp: "0", costEgp: "" }, []);
+    expect(errors.barcode).toBeUndefined();
     expect(errors.name).toBeTruthy();
     expect(errors.price).toBeTruthy();
+    expect(errors.cost).toBeTruthy();
   });
 
   it("rejects overlong names", () => {
-    expect(validateProductForm({ barcode: "111", name: "أ".repeat(61), priceEgp: "5" }, []).errors.name).toBeTruthy();
+    expect(validateProductForm({ barcode: "111", name: "أ".repeat(61), priceEgp: "5", costEgp: "1" }, []).errors.name).toBeTruthy();
   });
 });
 

@@ -4,7 +4,7 @@ import { accountBalance, remainingLimit, type Account, type DeficitResult, type 
 import { computeDeficitFromOps, totalsByType } from "../accounting";
 import { allAccounts, allOperations } from "../services/db";
 import { listOperations, type OperationFilters } from "../services/operationsService";
-import { getProfile, isDemoMode } from "../services/settingsService";
+import { getProfile } from "../services/settingsService";
 import type { ProfileRow } from "../services/db";
 
 /**
@@ -109,11 +109,6 @@ export function useAccountView(id: string | undefined): AccountViewState {
   if (data === undefined) return { status: "loading" };
   if (data === null) return { status: "missing" };
   return { status: "ready", view: data };
-}
-
-/** True while the app is running with clearly-marked demo data (banner/reset). */
-export function useDemoMode(): boolean | undefined {
-  return useLiveQuery(() => isDemoMode(), []);
 }
 
 /** matchMedia helper for responsive rendering (tables vs lists on mobile). */

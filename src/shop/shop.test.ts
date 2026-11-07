@@ -21,16 +21,20 @@ import {
   stockValue,
   todayRange,
   totalPieces,
+  assetsTotal,
+  capitalBreakdown,
+  stockCostValue,
 } from "./index";
-import type { Product, Receipt, StockMove } from "./types";
+import type { Product, Receipt, ShopAsset, StockMove } from "./types";
 
 // ---------- fixtures ----------
 
-const p = (id: string, priceEgp = 100, barcode = `BC${id}`): Product => ({
+const p = (id: string, priceEgp = 100, barcode = `BC${id}`, costEgp = 0): Product => ({
   id,
   barcode,
   name: `منتج ${id}`,
   pricePiastres: priceEgp * 100,
+  ...(costEgp ? { costPiastres: costEgp * 100 } : {}),
   createdAtIso: "2026-10-01T10:00:00.000Z",
 });
 
@@ -231,5 +235,54 @@ describe("cart rules", () => {
     const conflict = cartStockConflict(cart, (id) => (id === "b" ? 4 : 10));
     expect(conflict).toMatchObject({ productId: "b", requested: 5, available: 4 });
     expect(cartStockConflict(cart, () => 10)).toBeNull();
+  });
+});
+
+// ---------- رأس المال (capital) ----------
+
+const asset = (name: string, priceEgp: number): ShopAsset => ({
+  id: `as-${name}`,
+  name,
+  pricePiastres: priceEgp * 100,
+  createdAtIso: "2026-10-01T10:00:00.000Z",
+});
+
+describe("رأس المال — capital", () => {
+  it("stockCostValue uses wholesale cost × on-hand, never sell price", () => {
+    const rows = stockTable([p("a", 200, "1", 100), p("b", 500, "2", 300)], [
+      move("a", "in", 4),
+      move("b", "in", 2),
+      move("a", "sale", 1),
+    ]);
+    // a: (cost 100×3 slated) a sold 1 → 3 × 10,000 = 30,000; b: 2 × 30,000 = 60,000
+    expect(stockCostValue(rows)).toBe(90_000);
+  });
+
+  it("products without cost count as 0 (old rows)", () => {
+    const rows = stockTable([p("a", 200, "1")], [move("a", "in", 5)]); // no costPiastres
+    expect(stockCostValue(rows)).toBe(0);
+  });
+
+  it("negative? no — clamped to 0", () => {
+    const rows = stockTable([p("a", 100, "1", 50)], [move("a", "in", 2), move("a", "sale", 5)]);
+    expect(stockCostValue(rows)).toBe(0); // qty clamp ≥ 0
+  });
+
+  it("assetsTotal sums equipment prices", () => {
+    expect(assetsTotal([asset("ماسح", 1900), asset("طابعة", 2600)])).toBe(450_000);
+    expect(assetsTotal([])).toBe(0);
+  });
+
+  it("capitalBreakdown = stockCost + assets with per-product lines", () => {
+    const products = [p("a", 200, "1", 100), p("b", 300, "2")];
+    const rows = stockTable(products, [move("a", "in", 2)]);
+    const breakdown = capitalBreakdown(rows, [asset("ماسح باركود", 1900)]);
+    expect(breakdown.stockCost).toBe(20_000); // 2 × 100 ج
+    expect(breakdown.assets).toBe(190_000);
+    expect(breakdown.total).toBe(210_000);
+    expect(breakdown.lines).toHaveLength(2);
+    expect(breakdown.lines[0]).toMatchObject({ productId: "a", qty: 2, costPiastres: 10_000, lineCost: 20_000 });
+    // b has no cost → line shows zero and sorts last
+    expect(breakdown.lines[1]).toMatchObject({ productId: "b", lineCost: 0 });
   });
 });

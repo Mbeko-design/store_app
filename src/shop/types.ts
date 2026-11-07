@@ -21,7 +21,17 @@ export interface Product {
   id: string;
   barcode: string; // unique, scanned via the USB barcode scanner
   name: string;
-  pricePiastres: number; // sell price (v1: no cost/profit tracking, per decision)
+  pricePiastres: number; // sell price — the ONLY price POS shows
+  costPiastres?: number; // wholesale price (سعر الجملة) — capital tracking only; missing → 0 (old rows)
+  createdAtIso: string;
+}
+
+/** Fixed equipment/assets (رأس المال الثابت): barcode scanner, printer, shelves… */
+export interface ShopAsset {
+  id: string;
+  name: string;
+  pricePiastres: number; // what it cost when bought
+  note?: string;
   createdAtIso: string;
 }
 

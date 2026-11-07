@@ -9,18 +9,21 @@ import { Button } from "./Button";
 import { Field, inputCls } from "./Field";
 import { BarcodeInput } from "./BarcodeInput";
 import { Icon } from "./Icon";
+import { printBarcodeLabel, reserveBarcodePrintWindow } from "../utils/printBarcodeLabel";
 
 interface FormErrors {
   barcode?: string;
   name?: string;
   price?: string;
+  cost?: string;
   qty?: string;
 }
 
 /**
- * Register (scan barcode → details) / edit (name + price only — barcode is
+ * Register (scan barcode → details) / edit (name + prices — barcode is
  * immutable after registration) a product. Scanning an already-registered
  * barcode offers a shortcut to stock-in instead of failing silently.
+ * سعر الجملة (wholesale cost) feeds رأس المال only — POS shows sell price.
  */
 export function ProductFormDialog({
   open,
@@ -46,6 +49,7 @@ export function ProductFormDialog({
   const [barcode, setBarcode] = useState("");
   const [name, setName] = useState("");
   const [priceEgp, setPriceEgp] = useState("");
+  const [costEgp, setCostEgp] = useState("");
   const [initialQty, setInitialQty] = useState("0");
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
@@ -59,6 +63,7 @@ export function ProductFormDialog({
     setBarcode(product ? product.barcode : barcodePreset);
     setName(product?.name ?? "");
     setPriceEgp(product ? String(piastresToEgp(product.pricePiastres)) : "");
+    setCostEgp(product ? String(piastresToEgp(product.costPiastres ?? 0)) : "");
     setInitialQty("0");
   }, [open, product, barcodePreset]);
 
@@ -92,9 +97,9 @@ export function ProductFormDialog({
     if (saving) return; // double-submit guard
 
     if (product) {
-      // Edit: name + price only (barcode shown read-only).
+      // Edit: name + sell/wholesale prices (barcode shown read-only).
       const { errors: errs, values } = validateProductForm(
-        { barcode: product.barcode, name, priceEgp },
+        { barcode: product.barcode, name, priceEgp, costEgp },
         all,
         product.id,
       );
@@ -102,7 +107,11 @@ export function ProductFormDialog({
       if (!values) return;
       setSaving(true);
       try {
-        const saved = await updateProduct(product.id, { name: values.name, pricePiastres: values.pricePiastres });
+        const saved = await updateProduct(product.id, {
+          name: values.name,
+          pricePiastres: values.pricePiastres,
+          costPiastres: values.costPiastres,
+        });
         toast.success("تم تحديث المنتج");
         onSaved?.(saved);
         onClose();
@@ -115,19 +124,35 @@ export function ProductFormDialog({
     }
 
     const qty = parseQty(initialQty);
-    const { errors: errs, values } = validateProductForm({ barcode, name, priceEgp }, all);
+    const { errors: errs, values } = validateProductForm({ barcode, name, priceEgp, costEgp }, all);
     const allErrors: FormErrors = { ...errs };
     if (!qty.ok) allErrors.qty = qty.error;
     setErrors(allErrors);
     if (!values || !qty.ok) return;
 
+    const generatedBarcode = values.barcode === "";
+    const printWindow = generatedBarcode ? reserveBarcodePrintWindow() : null;
     setSaving(true);
     try {
       const saved = await createProduct({ ...values, initialQty: qty.qty });
       toast.success("تم تسجيل المنتج");
+      if (generatedBarcode) {
+        if (printWindow) {
+          try {
+            await printBarcodeLabel(printWindow, saved);
+          } catch (error) {
+            console.error("barcode label printing failed:", error);
+            printWindow.close();
+            toast.error("تم تسجيل المنتج، لكن تعذرت طباعة الملصق. يمكنك المحاولة من قائمة المنتجات.");
+          }
+        } else {
+          toast.error("تم تسجيل المنتج. اسمح بالنوافذ المنبثقة ثم اطبع الباركود من قائمة المنتجات.");
+        }
+      }
       onSaved?.(saved);
       onClose();
     } catch (err) {
+      printWindow?.close();
       if (err instanceof Error && err.message === "duplicate_barcode") {
         setErrors((e) => ({ ...e, barcode: "هذا الباركود مسجل لمنتج آخر" }));
       } else {
@@ -188,7 +213,7 @@ export function ProductFormDialog({
                 onScan={onScan}
                 error={errors.barcode}
                 autoFocus={!barcodePreset}
-                hint="امسح الباركود — إن كان مسجّلًا بالفعل سيظهر أدناه"
+                hint="امسح الباركود، أو اتركه فارغًا لتوليد رقم داخلي وطباعة ملصق"
               />
               {existing && (
                 <div className="rounded-md border border-warn-line bg-warn-bg p-3 text-sm text-warn" role="alert">
@@ -249,6 +274,22 @@ export function ProductFormDialog({
               }}
               aria-invalid={errors.price ? true : undefined}
               className={`${inputCls} ${errors.price ? "border-neg" : ""}`}
+            />
+          </Field>
+
+          <Field label="سعر الجملة" htmlFor="prod-cost" error={errors.cost} required hint="لحساب رأس المال فقط — لا تظهر في نقطة البيع">
+            <input
+              id="prod-cost"
+              type="text"
+              inputMode="decimal"
+              value={costEgp}
+              placeholder="مثال: 90"
+              onChange={(e) => {
+                setCostEgp(e.target.value);
+                setErrors((er) => ({ ...er, cost: undefined }));
+              }}
+              aria-invalid={errors.cost ? true : undefined}
+              className={`${inputCls} ${errors.cost ? "border-neg" : ""}`}
             />
           </Field>
 
