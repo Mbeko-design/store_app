@@ -40,14 +40,14 @@ export function ProductsPage() {
     setFormOpen(true);
   };
 
-  const printBarcode = async (product: Product) => {
+  const printBarcode = async (product: Product, copies: number) => {
     const printWindow = reserveBarcodePrintWindow();
     if (!printWindow) {
       toast.error("اسمح بالنوافذ المنبثقة لطباعة ملصق الباركود.");
       return;
     }
     try {
-      await printBarcodeLabel(printWindow, product);
+      await printBarcodeLabel(printWindow, product, copies);
     } catch (error) {
       console.error("barcode label printing failed:", error);
       printWindow.close();
@@ -158,9 +158,14 @@ export function ProductsPage() {
                   <Icon name="edit" size={14} />
                   تعديل
                 </Button>
-                <Button type="button" variant="secondary" className="h-9 px-2" onClick={() => printBarcode(product)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-9 px-2"
+                  onClick={() => printBarcode(product, stock > 0 ? stock : 1)}
+                >
                   <Icon name="barcode" size={14} />
-                  طباعة باركود
+                  طباعة {stock > 0 ? `${stock} ملصق` : "ملصق"}
                 </Button>
               </div>
             </li>

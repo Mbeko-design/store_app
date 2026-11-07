@@ -130,23 +130,22 @@ export function ProductFormDialog({
     setErrors(allErrors);
     if (!values || !qty.ok) return;
 
-    const generatedBarcode = values.barcode === "";
-    const printWindow = generatedBarcode ? reserveBarcodePrintWindow() : null;
+    const printWindow = qty.qty > 0 ? reserveBarcodePrintWindow() : null;
     setSaving(true);
     try {
       const saved = await createProduct({ ...values, initialQty: qty.qty });
       toast.success("تم تسجيل المنتج");
-      if (generatedBarcode) {
+      if (qty.qty > 0) {
         if (printWindow) {
           try {
-            await printBarcodeLabel(printWindow, saved);
+            await printBarcodeLabel(printWindow, saved, qty.qty);
           } catch (error) {
             console.error("barcode label printing failed:", error);
             printWindow.close();
-            toast.error("تم تسجيل المنتج، لكن تعذرت طباعة الملصق. يمكنك المحاولة من قائمة المنتجات.");
+            toast.error("تم تسجيل المنتج، لكن تعذرت طباعة الملصقات. يمكنك المحاولة من قائمة المنتجات.");
           }
         } else {
-          toast.error("تم تسجيل المنتج. اسمح بالنوافذ المنبثقة ثم اطبع الباركود من قائمة المنتجات.");
+          toast.error("تم تسجيل المنتج. اسمح بالنوافذ المنبثقة لإعادة طباعة ملصقاته من قائمة المنتجات.");
         }
       }
       onSaved?.(saved);
@@ -213,7 +212,7 @@ export function ProductFormDialog({
                 onScan={onScan}
                 error={errors.barcode}
                 autoFocus={!barcodePreset}
-                hint="امسح الباركود، أو اتركه فارغًا لتوليد رقم داخلي وطباعة ملصق"
+                hint="امسح الباركود أو اتركه فارغًا لتوليد رقم داخلي. ستتم طباعة ملصق لكل قطعة في الكمية الابتدائية."
               />
               {existing && (
                 <div className="rounded-md border border-warn-line bg-warn-bg p-3 text-sm text-warn" role="alert">
@@ -298,7 +297,7 @@ export function ProductFormDialog({
               label="الكمية الابتدائية"
               htmlFor="prod-qty"
               error={errors.qty}
-              hint="عدد القطع الموجودة الآن (0 = يُضاف لاحقًا من المخزون)"
+              hint="عدد القطع الموجودة الآن؛ ستُطبع ملصقات بالعدد نفسه (0 = دون طباعة)"
             >
               <input
                 id="prod-qty"
