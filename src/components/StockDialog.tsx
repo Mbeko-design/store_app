@@ -6,6 +6,7 @@ import { useToast } from "./Toast";
 import { Button } from "./Button";
 import { Field, inputCls } from "./Field";
 import { Icon } from "./Icon";
+import { printBarcodeLabel, reserveBarcodePrintWindow } from "../utils/printBarcodeLabel";
 
 /**
  * Stock dialog — two modes:
@@ -60,6 +61,7 @@ export function StockDialog({
       setError(parsed.error);
       return;
     }
+    const printWindow = mode === "in" ? reserveBarcodePrintWindow() : null;
     setSaving(true);
     try {
       if (mode === "in") {
@@ -72,7 +74,21 @@ export function StockDialog({
         );
       }
       onClose();
+      if (mode === "in") {
+        if (printWindow) {
+          try {
+            await printBarcodeLabel(printWindow, product, parsed.qty);
+          } catch (error) {
+            console.error("barcode label printing failed:", error);
+            printWindow.close();
+            toast.error("تم إدخال الكمية، لكن تعذرت طباعة الملصقات. أعد الطباعة من قائمة المنتجات.");
+          }
+        } else {
+          toast.error("تم إدخال الكمية. اسمح بالنوافذ المنبثقة لإعادة طباعة الملصقات من قائمة المنتجات.");
+        }
+      }
     } catch (err) {
+      printWindow?.close();
       toast.error(err instanceof Error && err.message === "not_found" ? "المنتج غير موجود" : "تعذر حفظ الحركة");
     } finally {
       setSaving(false);
@@ -119,7 +135,11 @@ export function StockDialog({
             htmlFor="stock-qty"
             error={error}
             required
-            hint={mode === "in" ? "عدد القطع المضافة إلى المخزون" : "العدد المعدود — يُسجَّل فرقًا عن الرصيد الحالي"}
+            hint={
+              mode === "in"
+                ? "عدد القطع المضافة؛ ستُطبع ملصقات بالعدد نفسه"
+                : "العدد المعدود — يُسجَّل فرقًا عن الرصيد الحالي دون طباعة"
+            }
           >
             <input
               id="stock-qty"

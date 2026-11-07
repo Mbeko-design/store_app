@@ -151,7 +151,8 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
 - **Register:** scan → form (name, wholesale cost, sell price, initial qty). If a product has no
   barcode, leave the field blank; the app generates an internal Code 128 barcode and opens a
   browser print dialog. Entering an initial quantity of 6 prints six labels, one 50 × 30 mm label
-  per page; quantity 0 skips printing. Existing labels can be printed again from the product list
+  per page; quantity 0 skips printing. Stock-in movements also print one label per incoming piece;
+  physical stock counts do not print. Existing labels can be printed again from the product list
   (one per piece currently in stock). The Xprinter XP-233B must be installed as a system printer
   and configured for the matching label stock.
 - Wholesale cost is used for رأس المال only; the POS uses and displays the sell price only.
