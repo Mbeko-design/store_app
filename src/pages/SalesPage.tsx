@@ -4,6 +4,7 @@ import { buttonCls } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { Icon } from "../components/Icon";
 import { PaymentBadge } from "../components/ShopBadges";
+import { ReceiptPrintButton } from "../components/ReceiptPrintButton";
 import { SkeletonList, LoadingBlock } from "../components/Skeleton";
 import { SummaryCard } from "../components/SummaryCard";
 import { useLoading } from "../hooks/useData";
@@ -228,6 +229,9 @@ export function SalesPage() {
                             ))}
                           </tbody>
                         </table>
+                        <div className="mt-3 flex justify-end">
+                          <ReceiptPrintButton receipt={r} />
+                        </div>
                       </div>
                     )}
                   </li>

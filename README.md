@@ -164,6 +164,9 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
   are blocked on submit.
 - **POS:** scan → cart line (re-scan increments qty, clamped to stock) → payment method
   (نقدًا / فودافون كاش) → save. An **unknown barcode opens the registration dialog prefilled**.
+- **Receipt printing:** print the saved invoice from POS or expand an invoice in Sales and
+  reprint it. The receipt is formatted for 80 mm thermal rolls; choose the Xprinter and 80 mm
+  paper in the browser print dialog (the exact paper option depends on its installed driver).
 
 ### Stock
 

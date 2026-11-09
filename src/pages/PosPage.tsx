@@ -10,6 +10,7 @@ import { EmptyState } from "../components/EmptyState";
 import { Icon } from "../components/Icon";
 import { ProductFormDialog } from "../components/ProductFormDialog";
 import { PaymentBadge } from "../components/ShopBadges";
+import { ReceiptPrintButton } from "../components/ReceiptPrintButton";
 import { useToast } from "../components/Toast";
 import { formatEgp, formatTime } from "../utils/format";
 
@@ -167,7 +168,8 @@ export function PosPage() {
             <PaymentBadge method={saved.paymentMethod} />
             <span className="bidi font-mono text-xs">{formatTime(saved.createdAtIso)}</span>
           </div>
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ReceiptPrintButton receipt={saved} />
             <Button type="button" variant="secondary" onClick={() => setSaved(null)}>
               فاتورة جديدة
             </Button>
