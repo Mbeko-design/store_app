@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { Button, buttonCls } from "../components/Button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
@@ -8,6 +8,8 @@ import { Icon } from "../components/Icon";
 import { LoadingBlock } from "../components/Skeleton";
 import { useToast } from "../components/Toast";
 import { useAllOperations, useAccounts, useProfile } from "../hooks/useData";
+import { useShopView } from "../hooks/useShop";
+import { downloadBackup, parseBackup, restoreBackup, type AppBackup } from "../services/backupService";
 import { clearAllData, saveProfile } from "../services/settingsService";
 import { initialsOf } from "../utils/format";
 
@@ -18,7 +20,9 @@ export function SettingsPage() {
   const profile = useProfile();
   const accounts = useAccounts(true);
   const operations = useAllOperations();
+  const shop = useShopView();
   const toast = useToast();
+  const backupInput = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -28,6 +32,9 @@ export function SettingsPage() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [pendingBackup, setPendingBackup] = useState<AppBackup | null>(null);
+  const [restoreOpen, setRestoreOpen] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -36,7 +43,7 @@ export function SettingsPage() {
     }
   }, [profile]);
 
-  if (!profile || !accounts || !operations) {
+  if (!profile || !accounts || !operations || !shop) {
     return (
       <div className="space-y-4">
         <LoadingBlock label="جارٍ تحميل الإعدادات…" />
@@ -79,6 +86,45 @@ export function SettingsPage() {
       toast.error("تعذر مسح البيانات");
     } finally {
       setClearing(false);
+    }
+  };
+
+  const exportData = async () => {
+    if (backupBusy) return;
+    setBackupBusy(true);
+    try {
+      await downloadBackup();
+      toast.success("تم تنزيل النسخة الاحتياطية");
+    } catch {
+      toast.error("تعذر تنزيل النسخة الاحتياطية");
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const chooseBackup = async (file?: File) => {
+    if (!file) return;
+    try {
+      setPendingBackup(parseBackup(await file.text()));
+      setRestoreOpen(true);
+    } catch {
+      toast.error("الملف تالف أو ليس نسخة احتياطية مدعومة");
+    }
+  };
+
+  const doRestore = async () => {
+    if (!pendingBackup || backupBusy) return;
+    setBackupBusy(true);
+    try {
+      await downloadBackup();
+      await restoreBackup(pendingBackup);
+      setPendingBackup(null);
+      setRestoreOpen(false);
+      toast.success("تم استعادة النسخة الاحتياطية");
+    } catch {
+      toast.error("تعذرت الاستعادة؛ لم يتم اعتماد التغييرات غير المكتملة");
+    } finally {
+      setBackupBusy(false);
     }
   };
 
@@ -201,17 +247,39 @@ export function SettingsPage() {
         </p>
         <p className="mt-2 text-sm text-ink-3">
           الحالي: <span className="bidi">{accounts.length}</span> حساب ·{" "}
-          <span className="bidi">{operations.length}</span> عملية
+          <span className="bidi">{operations.length}</span> عملية ·{" "}
+          <span className="bidi">{shop.totals.products}</span> منتج ·{" "}
+          <span className="bidi">{shop.totals.receipts}</span> فاتورة
         </p>
 
         <div className="mt-4 flex flex-wrap gap-3">
+          <Button type="button" variant="primary" onClick={exportData} loading={backupBusy}>
+            تنزيل نسخة احتياطية
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => backupInput.current?.click()} disabled={backupBusy}>
+            استعادة نسخة احتياطية
+          </Button>
+          <input
+            ref={backupInput}
+            type="file"
+            accept="application/json,.json"
+            className="sr-only"
+            aria-label="اختيار ملف النسخة الاحتياطية"
+            onChange={(event) => {
+              void chooseBackup(event.target.files?.[0]);
+              event.target.value = "";
+            }}
+          />
           <Button type="button" variant="danger" onClick={() => setClearOpen(true)}>
             مسح كل البيانات
           </Button>
         </div>
+        <p className="mt-2 text-xs text-ink-3">
+          ملف النسخة يحتوي بيانات الدفتر والمتجر ويُحفظ على جهازك؛ انقله إلى مكان آمن مثل Google Drive بنفسك.
+        </p>
       </section>
 
-      {accounts.length === 0 && operations.length === 0 && (
+      {accounts.length === 0 && operations.length === 0 && shop.totals.products === 0 && shop.totals.receipts === 0 && (
         <EmptyState
           icon="wallet"
           title="دفترك فارغ"
@@ -253,11 +321,27 @@ export function SettingsPage() {
         open={clearOpen}
         danger
         title="مسح كل البيانات؟"
-        message="سيُحذف كل الحسابات والعمليات والملف الشخصي من هذا الجهاز نهائيًا. لا يمكن التراجع."
+        message="سيُحذف كل الحسابات والعمليات وبيانات المتجر والملف الشخصي من هذا الجهاز نهائيًا. لا يمكن التراجع."
         confirmLabel="مسح نهائي"
         loading={clearing}
         onConfirm={doClear}
         onClose={() => setClearOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={restoreOpen}
+        danger
+        title="استعادة النسخة الاحتياطية؟"
+        message="ستستبدل النسخة كل البيانات الحالية، بما فيها بيانات المتجر. سيبدأ تنزيل نسخة من بياناتك الحالية قبل الاستعادة كإجراء احتياطي."
+        confirmLabel="تنزيل واستعادة"
+        loading={backupBusy}
+        onConfirm={doRestore}
+        onClose={() => {
+          if (!backupBusy) {
+            setRestoreOpen(false);
+            setPendingBackup(null);
+          }
+        }}
       />
     </div>
   );

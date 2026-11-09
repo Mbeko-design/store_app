@@ -45,6 +45,8 @@ export function useReceipts(): Receipt[] | undefined {
 }
 
 export interface ShopView {
+  /** All products, including archived ones, for historic sale cost estimates. */
+  products: Product[];
   /** Products with derived stock + status. */
   rows: StockRow[];
   receipts: Receipt[]; // newest first
@@ -66,17 +68,19 @@ export interface ShopView {
 
 export function useShopView(): ShopView | undefined {
   const data = useLiveQuery(async () => {
-    const [products, receipts, moves, assets] = await Promise.all([listProducts(), listReceipts(), allStockMoves(), listAssets()]);
+    const [products, receipts, moves, assets] = await Promise.all([listProducts(true), listReceipts(), allStockMoves(), listAssets()]);
     return { products, receipts, moves, assets };
   }, []);
 
   return useMemo(() => {
     if (!data) return undefined;
-    const rows = stockTable(data.products, data.moves);
+    const activeProducts = data.products.filter((product) => !product.archivedAtIso);
+    const rows = stockTable(activeProducts, data.moves);
     const { start, end } = todayRange();
     const todays = receiptsInRange(data.receipts, start, end);
     return {
       rows,
+      products: data.products,
       receipts: data.receipts,
       sold: soldItems(data.receipts),
       low: lowStockRows(rows),
@@ -89,7 +93,7 @@ export function useShopView(): ShopView | undefined {
         piecesToday: soldCount(todays),
         pieces: totalPieces(rows),
         stockValue: stockValue(rows),
-        products: data.products.length,
+        products: activeProducts.length,
         receipts: data.receipts.length,
       },
     };

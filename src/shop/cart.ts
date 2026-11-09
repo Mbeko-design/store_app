@@ -29,7 +29,14 @@ export function addToCart(cart: CartLine[], product: Product, onHand: number): A
   return {
     cart: [
       ...cart,
-      { productId: product.id, barcode: product.barcode, name: product.name, pricePiastres: product.pricePiastres, qty: 1 },
+      {
+        productId: product.id,
+        barcode: product.barcode,
+        name: product.name,
+        pricePiastres: product.pricePiastres,
+        ...(product.costPiastres !== undefined ? { costPiastres: product.costPiastres } : {}),
+        qty: 1,
+      },
     ],
   };
 }

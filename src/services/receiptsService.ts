@@ -1,4 +1,12 @@
-import { cartStockConflict, cartTotal, type CartLine, type PaymentMethod, type Receipt, type StockMove } from "../shop";
+import {
+  cartStockConflict,
+  cartTotal,
+  type CartLine,
+  type PaymentMethod,
+  type Product,
+  type Receipt,
+  type StockMove,
+} from "../shop";
 import { stockOnHand } from "../shop/stock";
 import { newId } from "../utils/labels";
 import { db } from "./db";
@@ -24,12 +32,14 @@ export async function saveReceipt(input: SaveReceiptInput): Promise<Receipt> {
     // Snapshot stock for the referenced products, then re-validate the cart.
     const productIds = [...new Set(input.lines.map((l) => l.productId))];
     const stocks = new Map<string, number>();
+    const products = new Map<string, Product>();
     for (const id of productIds) {
       const product = await db.products.get(id);
       if (!product) throw new Error("product_missing");
       if (product.archivedAtIso) throw new Error("product_archived");
       const moves = await db.stockMoves.where("productId").equals(id).toArray();
       stocks.set(id, stockOnHand(moves, id));
+      products.set(id, product);
     }
     const conflict = cartStockConflict(input.lines, (id) => stocks.get(id) ?? 0);
     if (conflict) throw new Error("insufficient_stock");
@@ -40,7 +50,10 @@ export async function saveReceipt(input: SaveReceiptInput): Promise<Receipt> {
     const receipt: Receipt = {
       id: newId(),
       number,
-      lines: input.lines.map((l) => ({ ...l })), // snapshot lines (name/price at sale time)
+      lines: input.lines.map((line) => {
+        const costPiastres = products.get(line.productId)?.costPiastres;
+        return { ...line, ...(costPiastres !== undefined ? { costPiastres } : {}) };
+      }), // snapshot lines (including current wholesale cost)
       totalPiastres: cartTotal(input.lines),
       paymentMethod: input.paymentMethod,
       createdAtIso: nowIso,

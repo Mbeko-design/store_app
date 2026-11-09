@@ -1,5 +1,5 @@
 import { isWithin } from "../utils/dates";
-import type { PaymentMethod, Receipt, ReceiptLine } from "./types";
+import type { PaymentMethod, Product, Receipt, ReceiptLine } from "./types";
 
 /**
  * Sales/report math — derived ONLY from receipts (append-only source of truth).
@@ -17,6 +17,38 @@ export function receiptsInRange(receipts: Receipt[], start: Date, end: Date): Re
 
 export function salesTotal(receipts: Receipt[]): number {
   return receipts.reduce((sum, r) => sum + r.totalPiastres, 0);
+}
+
+export interface SalesProfit {
+  profitPiastres: number;
+  uncostedLineCount: number;
+  estimatedLegacyLineCount: number;
+}
+
+/**
+ * Gross profit from sale-time cost snapshots; legacy receipts fall back to the
+ * product's current cost and are explicitly counted as estimates.
+ */
+export function salesProfit(receipts: Receipt[], products: Product[]): SalesProfit {
+  const costByProduct = new Map(products.map((product) => [product.id, product.costPiastres]));
+  let profitPiastres = 0;
+  let uncostedLineCount = 0;
+  let estimatedLegacyLineCount = 0;
+
+  for (const receipt of receipts) {
+    for (const line of receipt.lines) {
+      const legacy = line.costPiastres === undefined;
+      const cost = legacy ? costByProduct.get(line.productId) : line.costPiastres;
+      if (cost === undefined || cost <= 0) {
+        uncostedLineCount += 1;
+        continue;
+      }
+      if (legacy) estimatedLegacyLineCount += 1;
+      profitPiastres += (line.pricePiastres - cost) * line.qty;
+    }
+  }
+
+  return { profitPiastres, uncostedLineCount, estimatedLegacyLineCount };
 }
 
 export function receiptsByMethod(receipts: Receipt[], method: PaymentMethod): Receipt[] {

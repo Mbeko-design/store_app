@@ -32,6 +32,7 @@ export function AssetFormDialog({
   const toast = useToast();
   const [name, setName] = useState("");
   const [priceEgp, setPriceEgp] = useState("");
+  const [owner, setOwner] = useState<ShopAsset["owner"]>("fouad");
   const [note, setNote] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
@@ -42,6 +43,7 @@ export function AssetFormDialog({
     setSaving(false);
     setName(asset?.name ?? "");
     setPriceEgp(asset ? String(piastresToEgp(asset.pricePiastres)) : "");
+    setOwner(asset?.owner ?? "fouad");
     setNote(asset?.note ?? "");
   }, [open, asset]);
 
@@ -69,8 +71,8 @@ export function AssetFormDialog({
     setSaving(true);
     try {
       const saved = asset
-        ? await updateAsset(asset.id, { name, pricePiastres: amount.piastres, note })
-        : await createAsset({ name, pricePiastres: amount.piastres, note });
+        ? await updateAsset(asset.id, { name, pricePiastres: amount.piastres, owner, note })
+        : await createAsset({ name, pricePiastres: amount.piastres, owner, note });
       toast.success(asset ? "تم تحديث المعدة" : "تمت إضافة المعدة");
       onSaved?.(saved);
       onClose();
@@ -136,6 +138,18 @@ export function AssetFormDialog({
               aria-invalid={errors.price ? true : undefined}
               className={`${inputCls} ${errors.price ? "border-neg" : ""}`}
             />
+          </Field>
+
+          <Field label="صاحب التمويل" htmlFor="asset-owner" required>
+            <select
+              id="asset-owner"
+              value={owner}
+              onChange={(e) => setOwner(e.target.value === "saad" ? "saad" : "fouad")}
+              className={inputCls}
+            >
+              <option value="fouad">فؤاد</option>
+              <option value="saad">سعد</option>
+            </select>
           </Field>
 
           <Field label="ملاحظة (اختياري)" htmlFor="asset-note">

@@ -179,11 +179,17 @@ stock = Σ(stock-in) + Σ(corrections, signed) − Σ(sales)
 ### Receipts
 
 - Append-only, **sequential numbers** (`settings.receiptSeq`), lines snapshot name/price/barcode
-  at sale time; totals in integer piastres via `cartTotal`.
+  and wholesale cost at sale time; totals in integer piastres via `cartTotal`.
 - Stock is re-checked **inside the save transaction** (UI checks are UX only) — an over-stock
   scan can never write a receipt.
 - Sold-items report = aggregation over receipts (`soldItems`), filterable by period and
-  payment method.
+  payment method. The sales summary defaults to today, and supports this month, a selected date
+  range, or all receipts. Gross profit uses the saved sale-time cost when available; older
+  receipts without cost snapshots are estimated using the product's current wholesale cost and
+  are marked as estimates.
+
+Fixed equipment records its funding owner (فؤاد or سعد); existing equipment is assigned to فؤاد
+during the additive database upgrade and can be reassigned from the inventory equipment editor.
 
 ---
 
@@ -270,8 +276,9 @@ vercel --prod          # production deploy
 
 ## Known limitations
 
-1. **Local-only storage.** Everything lives in this browser's IndexedDB. There is no server, no
-   sync, no backup. Clearing browser data deletes the ledger. Export/backup is not yet available.
+1. **Local-only storage.** Everything lives in this browser's IndexedDB. There is no server or
+   automatic sync. Settings can export and restore a versioned JSON backup; keep that file in a
+   safe location (for example, Google Drive). Clearing browser data deletes the local copy.
 2. **One device, one browser profile.** Opening the app in another browser shows an empty ledger.
 3. **No operation editing/deletion.** Entries are append-only in v1; fix mistakes by recording the
    opposite entry (or wait for a future reversal feature).
@@ -280,9 +287,9 @@ vercel --prod          # production deploy
 6. **Theme/language:** light theme and Arabic only for now.
 7. **The `فلوس`-doesn't-affect-balance rule** and the meter equation were confirmed for v1; both
    are isolated in `src/accounting/` so a rule change is a one-file change (plus tests).
-8. **Shop v1:** receipts are append-only (no delete — fix stock via جرد); sell price only
-   (no cost/profit); product barcode is immutable after registration; no barcode-label printing;
-   shop data is never synced to the money ledger.
+8. **Shop v1:** receipts are append-only (no delete — fix stock via جرد); profit is gross and
+   estimated when legacy cost snapshots are unavailable; product barcode is immutable after
+   registration; no barcode-label printing; shop data is never synced to the money ledger.
 
 ---
 

@@ -10,6 +10,7 @@ import {
   receiptTotal,
   receiptsByMethod,
   receiptsInRange,
+  salesProfit,
   removeLine,
   setLineQty,
   soldCount,
@@ -171,6 +172,19 @@ describe("receipt totals & aggregates", () => {
     expect(end.getDate()).toBe(31);
     expect(end.getTime() - start.getTime()).toBe(86_400_000);
   });
+
+  it("uses sale-time cost snapshots and estimates legacy receipts from current cost", () => {
+    const captured = receipt("r1", [["a", 2, 100]]);
+    captured.lines[0]!.costPiastres = 70_00;
+    const legacy = receipt("r2", [["a", 1, 100]]);
+    const unknown = receipt("r3", [["b", 1, 50]]);
+
+    expect(salesProfit([captured, legacy, unknown], [p("a", 100, "BCa", 60), p("b", 50)])).toEqual({
+      profitPiastres: 10_000,
+      uncostedLineCount: 1,
+      estimatedLegacyLineCount: 1,
+    });
+  });
 });
 
 describe("soldItems aggregation", () => {
@@ -240,10 +254,11 @@ describe("cart rules", () => {
 
 // ---------- رأس المال (capital) ----------
 
-const asset = (name: string, priceEgp: number): ShopAsset => ({
+const asset = (name: string, priceEgp: number, owner: ShopAsset["owner"] = "fouad"): ShopAsset => ({
   id: `as-${name}`,
   name,
   pricePiastres: priceEgp * 100,
+  owner,
   createdAtIso: "2026-10-01T10:00:00.000Z",
 });
 
@@ -269,17 +284,19 @@ describe("رأس المال — capital", () => {
   });
 
   it("assetsTotal sums equipment prices", () => {
-    expect(assetsTotal([asset("ماسح", 1900), asset("طابعة", 2600)])).toBe(450_000);
+    expect(assetsTotal([asset("ماسح", 1900), asset("طابعة", 2600, "saad")])).toBe(450_000);
     expect(assetsTotal([])).toBe(0);
   });
 
   it("capitalBreakdown = stockCost + assets with per-product lines", () => {
     const products = [p("a", 200, "1", 100), p("b", 300, "2")];
     const rows = stockTable(products, [move("a", "in", 2)]);
-    const breakdown = capitalBreakdown(rows, [asset("ماسح باركود", 1900)]);
+    const breakdown = capitalBreakdown(rows, [asset("ماسح باركود", 1900), asset("طابعة", 500, "saad")]);
     expect(breakdown.stockCost).toBe(20_000); // 2 × 100 ج
-    expect(breakdown.assets).toBe(190_000);
-    expect(breakdown.total).toBe(210_000);
+    expect(breakdown.assets).toBe(240_000);
+    expect(breakdown.fouadAssets).toBe(190_000);
+    expect(breakdown.saadAssets).toBe(50_000);
+    expect(breakdown.total).toBe(260_000);
     expect(breakdown.lines).toHaveLength(2);
     expect(breakdown.lines[0]).toMatchObject({ productId: "a", qty: 2, costPiastres: 10_000, lineCost: 20_000 });
     // b has no cost → line shows zero and sorts last

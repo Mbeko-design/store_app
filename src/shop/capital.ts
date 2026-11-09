@@ -49,6 +49,10 @@ export interface CapitalBreakdown {
   stockCost: number;
   /** قيمة المعدات والأجهزة. */
   assets: number;
+  /** المعدات الممولة من فؤاد. */
+  fouadAssets: number;
+  /** المعدات الممولة من سعد. */
+  saadAssets: number;
   /** الإجمالي: stockCost + assets. */
   total: number;
   lines: CapitalLine[];
@@ -57,5 +61,11 @@ export interface CapitalBreakdown {
 export function capitalBreakdown(rows: StockRow[], assets: ShopAsset[]): CapitalBreakdown {
   const stockCost = stockCostValue(rows);
   const assetsValue = assetsTotal(assets);
-  return { stockCost, assets: assetsValue, total: stockCost + assetsValue, lines: capitalLines(rows) };
+  const fouadAssets = assets
+    .filter((asset) => asset.owner === "fouad")
+    .reduce((sum, asset) => sum + asset.pricePiastres, 0);
+  const saadAssets = assets
+    .filter((asset) => asset.owner === "saad")
+    .reduce((sum, asset) => sum + asset.pricePiastres, 0);
+  return { stockCost, assets: assetsValue, fouadAssets, saadAssets, total: stockCost + assetsValue, lines: capitalLines(rows) };
 }

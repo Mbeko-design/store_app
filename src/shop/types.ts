@@ -32,16 +32,20 @@ export interface ShopAsset {
   id: string;
   name: string;
   pricePiastres: number; // what it cost when bought
+  owner: AssetOwner;
   note?: string;
   createdAtIso: string;
 }
 
-/** One line of a receipt. name/price/barcode are SNAPSHOTS at sale time. */
+export type AssetOwner = "fouad" | "saad";
+
+/** One line of a receipt. Name, price, barcode, and cost are sale-time snapshots. */
 export interface ReceiptLine {
   productId: string;
   barcode: string;
   name: string;
   pricePiastres: number;
+  costPiastres?: number;
   qty: number;
 }
 

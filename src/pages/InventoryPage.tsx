@@ -105,7 +105,7 @@ export function InventoryPage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             label="المخزون (بتكلفة الجملة)"
             amount={formatEgp(capital.stockCost)}
@@ -114,11 +114,18 @@ export function InventoryPage() {
             sub="سعر الجملة × الكميات"
           />
           <SummaryCard
-            label="المعدات والأجهزة"
-            amount={formatEgp(capital.assets)}
+            label="معدات فؤاد"
+            amount={formatEgp(capital.fouadAssets)}
             tone="pos"
             icon="barcode"
-            sub={`${view.assets.length} معدة`}
+            sub={`${view.assets.filter((asset) => asset.owner === "fouad").length} معدة`}
+          />
+          <SummaryCard
+            label="معدات سعد"
+            amount={formatEgp(capital.saadAssets)}
+            tone="cash"
+            icon="barcode"
+            sub={`${view.assets.filter((asset) => asset.owner === "saad").length} معدة`}
           />
           <SummaryCard label="إجمالي رأس المال" amount={formatEgp(capital.total)} tone="brand" icon="wallet" sub="مخزون + معدات" />
         </div>
@@ -158,7 +165,7 @@ export function InventoryPage() {
           {/* Equipment (رأس المال الثابت) */}
           <div className="rounded-lg border border-line bg-card shadow-card">
             <h3 className="border-b border-line px-4 py-3 text-sm font-extrabold text-ink-2">
-             المعدات والأجهزة (رأس المال الثابت)
+              المعدات والأجهزة (رأس المال الثابت)
             </h3>
             {view.assets.length === 0 ? (
               <p className="px-4 py-4 text-sm text-ink-3">
@@ -170,6 +177,7 @@ export function InventoryPage() {
                   <li key={a.id} className="flex items-center gap-3 px-4 py-2.5">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{a.name}</p>
+                      <p className="text-[11px] font-bold text-ink-3">{a.owner === "saad" ? "تمويل سعد" : "تمويل فؤاد"}</p>
                       {a.note && <p className="truncate text-[11px] text-ink-3">{a.note}</p>}
                     </div>
                     <p className="bidi shrink-0 text-sm font-extrabold">{formatEgp(a.pricePiastres)}</p>

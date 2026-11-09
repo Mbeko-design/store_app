@@ -10,13 +10,19 @@ export async function listAssets(): Promise<ShopAsset[]> {
   return assets.sort((a, b) => a.name.localeCompare(b.name, "ar"));
 }
 
-export async function createAsset(input: { name: string; pricePiastres: number; note?: string }): Promise<ShopAsset> {
+export async function createAsset(input: {
+  name: string;
+  pricePiastres: number;
+  owner: ShopAsset["owner"];
+  note?: string;
+}): Promise<ShopAsset> {
   const name = input.name.trim();
   if (!name) throw new Error("invalid_name");
   const asset: ShopAsset = {
     id: newId(),
     name,
     pricePiastres: input.pricePiastres,
+    owner: input.owner,
     ...(input.note?.trim() ? { note: input.note.trim() } : {}),
     createdAtIso: new Date().toISOString(),
   };
@@ -26,7 +32,7 @@ export async function createAsset(input: { name: string; pricePiastres: number; 
 
 export async function updateAsset(
   id: string,
-  patch: { name?: string; pricePiastres?: number; note?: string },
+  patch: { name?: string; pricePiastres?: number; owner?: ShopAsset["owner"]; note?: string },
 ): Promise<ShopAsset> {
   const existing = await db.shopAssets.get(id);
   if (!existing) throw new Error("not_found");
@@ -34,6 +40,7 @@ export async function updateAsset(
     ...existing,
     ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
     ...(patch.pricePiastres !== undefined ? { pricePiastres: patch.pricePiastres } : {}),
+    ...(patch.owner !== undefined ? { owner: patch.owner } : {}),
     ...(patch.note !== undefined ? (patch.note.trim() ? { note: patch.note.trim() } : { note: undefined }) : {}),
   };
   // keep the stored row shape clean (undefined note key removed)
@@ -41,6 +48,7 @@ export async function updateAsset(
     id: updated.id,
     name: updated.name,
     pricePiastres: updated.pricePiastres,
+    owner: updated.owner ?? "fouad",
     ...(updated.note ? { note: updated.note } : {}),
     createdAtIso: updated.createdAtIso,
   };

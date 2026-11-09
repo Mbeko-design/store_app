@@ -51,6 +51,19 @@ class CashyDB extends Dexie {
       stockMoves: "id, productId, createdAtIso, [productId+type]",
       shopAssets: "id, createdAtIso",
     });
+    // v4: existing equipment is attributed to Fouad unless the user changes it.
+    this.version(4)
+      .stores({
+        products: "id, barcode, createdAtIso",
+        receipts: "id, number, createdAtIso",
+        stockMoves: "id, productId, createdAtIso, [productId+type]",
+        shopAssets: "id, createdAtIso",
+      })
+      .upgrade((transaction) =>
+        transaction.table("shopAssets").toCollection().modify((asset: ShopAsset) => {
+          asset.owner ??= "fouad";
+        }),
+      );
   }
 }
 
