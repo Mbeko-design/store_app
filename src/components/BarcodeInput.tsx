@@ -4,7 +4,7 @@ import { Field, inputCls } from "./Field";
 
 /**
  * Barcode input for the USB scanner (keyboard-wedge: the scanner types the
- * code then Enter). Enter → onScan(code); the parent clears the value and the
+ * code then Enter). Enter → onScan(code); the parent can clear the value and the
  * field keeps focus so the next product can be scanned immediately.
  * Controlled: the parent owns `value` (it is the record submitted).
  */
@@ -23,6 +23,8 @@ export interface BarcodeInputProps {
   big?: boolean;
   placeholder?: string;
   disabled?: boolean;
+  /** Defaults to true; set false when Enter can submit a text search as well. */
+  clearOnScan?: boolean;
   /** External focus handle (e.g., refocus after closing a dialog). */
   inputRef?: Ref<HTMLInputElement>;
 }
@@ -40,6 +42,7 @@ export function BarcodeInput({
   big,
   placeholder = "امسح الباركود…",
   disabled,
+  clearOnScan = true,
   inputRef,
 }: BarcodeInputProps) {
   const innerRef = useRef<HTMLInputElement>(null);
@@ -59,7 +62,7 @@ export function BarcodeInput({
     const code = value.trim();
     if (!code || disabled) return;
     onScan(code);
-    onValueChange("");
+    if (clearOnScan) onValueChange("");
     // Stay ready for the next scan.
     requestAnimationFrame(() => innerRef.current?.focus());
   };

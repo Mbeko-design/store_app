@@ -9,10 +9,12 @@ import {
   setLineQty,
   type CartLine,
   type PaymentMethod,
+  type Product,
   type Receipt,
 } from "../shop";
 import { PAYMENT_LABEL } from "../shop/types";
 import { findByBarcode } from "../services/productsService";
+import { isValidBarcode } from "../validation/shop";
 import { saveReceipt } from "../services/receiptsService";
 import { useShopView } from "../hooks/useShop";
 import { BarcodeInput } from "../components/BarcodeInput";
@@ -54,6 +56,16 @@ export function PosPage() {
     return (id: string) => map.get(id) ?? 0;
   }, [view]);
 
+  const searchResults = useMemo(() => {
+    const query = scanValue.trim().toLocaleLowerCase();
+    if (!query || !view) return [];
+    return view.rows
+      .filter(({ product }) =>
+        product.name.toLocaleLowerCase().includes(query) || product.barcode.toLocaleLowerCase().startsWith(query),
+      )
+      .slice(0, 8);
+  }, [scanValue, view]);
+
   const focusScan = () => requestAnimationFrame(() => scanRef.current?.focus());
   const subtotalPiastres = cartTotal(cart);
   const parsedDiscountPercent = parseDiscountPercent(discountPercent);
@@ -61,17 +73,11 @@ export function PosPage() {
     parsedDiscountPercent === null ? 0 : calculateDiscountPiastres(subtotalPiastres, parsedDiscountPercent);
   const finalTotalPiastres = subtotalPiastres - discountPiastres;
 
-  const onScan = async (code: string) => {
-    if (!view) return;
-    const product = await findByBarcode(code).catch(() => undefined);
-    if (!product) {
-      setScanError(`باركود غير مسجل: ${code}`);
-      setUnknownBarcode(code);
-      return;
-    }
+  const addProduct = (product: Product) => {
+    setScanValue("");
+    setUnknownBarcode(null);
     if (product.archivedAtIso) {
       setScanError(`الصنف «${product.name}» مؤرشف — أعده من قائمة المنتجات قبل البيع`);
-      setUnknownBarcode(null);
       return;
     }
     // Any new scan dismisses the "saved receipt" panel → fresh receipt.
@@ -90,6 +96,31 @@ export function PosPage() {
     }
     setCart(res.cart);
     setScanError(undefined);
+  };
+
+  const onScan = async (query: string) => {
+    if (!view) return;
+    setScanError(undefined);
+    const product = await findByBarcode(query).catch(() => undefined);
+    if (product) {
+      addProduct(product);
+      return;
+    }
+
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const hasSuggestions = view.rows.some(
+      ({ product: item }) =>
+        item.name.toLocaleLowerCase().includes(normalizedQuery) ||
+        item.barcode.toLocaleLowerCase().startsWith(normalizedQuery),
+    );
+    if (hasSuggestions) return;
+
+    if (isValidBarcode(query)) {
+      setScanValue("");
+      setUnknownBarcode(query);
+      return;
+    }
+    setScanError("لا يوجد منتج بهذا الاسم أو بداية الباركود");
   };
 
   const submit = async () => {
@@ -165,15 +196,39 @@ export function PosPage() {
             if (saved) setSaved(null); // typing starts a new receipt
           }}
           onScan={onScan}
+          clearOnScan={false}
           inputRef={scanRef}
           big
           autoFocus
           label=""
-          placeholder="امسح الباركود لإضافته للفاتورة…"
+          placeholder="امسح الباركود أو ابحث بالاسم/أول أرقام الباركود…"
         />
         <p className="mt-2 text-xs text-ink-3">
-          الماسح يكتب الباركود ثم <span dir="ltr" className="font-mono">Enter</span> — إعادة المسح تزيد الكمية 1.
+          امسح الباركود كاملًا لإضافة المنتج، أو ابحث بالاسم أو بداية الباركود واختر المنتج من النتائج.
         </p>
+
+        {searchResults.length > 0 && (
+          <ul className="mt-3 divide-y divide-line overflow-hidden rounded-md border border-line bg-card" aria-label="نتائج البحث عن المنتجات">
+            {searchResults.map(({ product, stock }) => (
+              <li key={product.id}>
+                <button
+                  type="button"
+                  disabled={stock <= 0}
+                  onClick={() => addProduct(product)}
+                  className="flex min-h-14 w-full items-center gap-3 px-3 py-2 text-start hover:bg-page disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold">{product.name}</span>
+                    <span dir="ltr" className="block text-start font-mono text-xs text-ink-3">{product.barcode}</span>
+                  </span>
+                  <span className="bidi shrink-0 text-xs text-ink-2">
+                    {stock > 0 ? `${stock} متاح · ${formatEgp(product.pricePiastres)}` : "نفد المخزون"}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {scanError && (
           <div
