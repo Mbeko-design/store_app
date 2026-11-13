@@ -163,8 +163,9 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
 - Scanning an already-registered barcode opens a stock-in shortcut instead of failing; duplicates
   are blocked on submit.
 - **POS:** scan → cart line (re-scan increments qty, clamped to stock) → payment method
-  (نقدًا / فودافون كاش), optional manually entered discount code + percentage → save. Discount
-  details and the net total are stored on the receipt. An **unknown barcode opens the registration dialog prefilled**.
+  (نقدًا / فودافون كاش), optional fixed discount amount in EGP → save. The discount amount and
+  net total are stored on the receipt. An **unknown barcode opens the registration dialog prefilled**.
+- **Stock-in:** optionally record the supplier name with each incoming stock movement.
 - **Receipt printing:** print the saved invoice from POS or expand an invoice in Sales and
   reprint it. The receipt is formatted for 80 mm thermal rolls; choose the Xprinter and 80 mm
   paper in the browser print dialog (the exact paper option depends on its installed driver).
@@ -183,8 +184,8 @@ stock = Σ(stock-in) + Σ(corrections, signed) − Σ(sales)
 ### Receipts
 
 - Append-only, **sequential numbers** (`settings.receiptSeq`), lines snapshot name/price/barcode
-  and wholesale cost at sale time; optional discount code and percentage are recorded with the
-  pre-discount subtotal, discount amount, and final total, all in integer piastres.
+  and wholesale cost at sale time; an optional fixed discount amount is recorded with the
+  pre-discount subtotal and final total, all in integer piastres.
 - Stock is re-checked **inside the save transaction** (UI checks are UX only) — an over-stock
   scan can never write a receipt.
 - Sold-items report = aggregation over receipts (`soldItems`), filterable by period and

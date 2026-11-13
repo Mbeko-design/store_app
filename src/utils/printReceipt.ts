@@ -18,7 +18,7 @@ export function receiptPrintHtml(receipt: Receipt): string {
   const subtotalPiastres = receipt.subtotalPiastres ?? receipt.totalPiastres;
   const discountRow = receipt.discountPiastres
     ? `<div class="summary-row"><span>قبل الخصم</span><strong>${escapeHtml(formatEgp(subtotalPiastres))}</strong></div>
-       <div class="summary-row"><span>خصم ${escapeHtml(receipt.discountCode ?? "")} (${receipt.discountPercent ?? 0}%)</span>
+       <div class="summary-row"><span>قيمة الخصم</span>
        <strong>−${escapeHtml(formatEgp(receipt.discountPiastres))}</strong></div>`
     : "";
   const rows = receipt.lines

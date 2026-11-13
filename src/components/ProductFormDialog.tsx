@@ -51,6 +51,7 @@ export function ProductFormDialog({
   const [priceEgp, setPriceEgp] = useState("");
   const [costEgp, setCostEgp] = useState("");
   const [initialQty, setInitialQty] = useState("0");
+  const [supplierName, setSupplierName] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [existing, setExisting] = useState<Product | null>(null);
@@ -65,6 +66,7 @@ export function ProductFormDialog({
     setPriceEgp(product ? String(piastresToEgp(product.pricePiastres)) : "");
     setCostEgp(product ? String(piastresToEgp(product.costPiastres ?? 0)) : "");
     setInitialQty("0");
+    setSupplierName("");
   }, [open, product, barcodePreset]);
 
   useEffect(() => {
@@ -133,7 +135,7 @@ export function ProductFormDialog({
     const printWindow = qty.qty > 0 ? reserveBarcodePrintWindow() : null;
     setSaving(true);
     try {
-      const saved = await createProduct({ ...values, initialQty: qty.qty });
+      const saved = await createProduct({ ...values, initialQty: qty.qty, supplierName });
       toast.success("تم تسجيل المنتج");
       if (qty.qty > 0) {
         if (printWindow) {
@@ -294,25 +296,38 @@ export function ProductFormDialog({
           </Field>
 
           {!isEdit && (
-            <Field
-              label="الكمية الابتدائية"
-              htmlFor="prod-qty"
-              error={errors.qty}
-              hint="عدد القطع الموجودة الآن؛ ستُطبع ملصقات بالعدد نفسه (0 = دون طباعة)"
-            >
-              <input
-                id="prod-qty"
-                type="text"
-                inputMode="numeric"
-                value={initialQty}
-                onChange={(e) => {
-                  setInitialQty(e.target.value);
-                  setErrors((er) => ({ ...er, qty: undefined }));
-                }}
-                aria-invalid={errors.qty ? true : undefined}
-                className={`${inputCls} ${errors.qty ? "border-neg" : ""}`}
-              />
-            </Field>
+            <>
+              <Field
+                label="الكمية الابتدائية"
+                htmlFor="prod-qty"
+                error={errors.qty}
+                hint="عدد القطع الموجودة الآن؛ ستُطبع ملصقات بالعدد نفسه (0 = دون طباعة)"
+              >
+                <input
+                  id="prod-qty"
+                  type="text"
+                  inputMode="numeric"
+                  value={initialQty}
+                  onChange={(e) => {
+                    setInitialQty(e.target.value);
+                    setErrors((er) => ({ ...er, qty: undefined }));
+                  }}
+                  aria-invalid={errors.qty ? true : undefined}
+                  className={`${inputCls} ${errors.qty ? "border-neg" : ""}`}
+                />
+              </Field>
+              <Field label="اسم المورد (اختياري)" htmlFor="prod-supplier">
+                <input
+                  id="prod-supplier"
+                  type="text"
+                  maxLength={80}
+                  value={supplierName}
+                  onChange={(e) => setSupplierName(e.target.value)}
+                  placeholder="المورد الذي اشتريت منه الكمية الابتدائية"
+                  className={inputCls}
+                />
+              </Field>
+            </>
           )}
 
           <div className="flex gap-3 pt-1">

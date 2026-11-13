@@ -5,10 +5,8 @@ import {
   cartCount,
   cartStockConflict,
   cartTotal,
-  calculateDiscountPiastres,
   lowStockRows,
   PAYMENT_LABEL,
-  parseDiscountPercent,
   receiptTotal,
   receiptsByMethod,
   receiptsInRange,
@@ -27,6 +25,7 @@ import {
   assetsTotal,
   capitalBreakdown,
   stockCostValue,
+  totalAfterDiscount,
 } from "./index";
 import type { Product, Receipt, ShopAsset, StockMove } from "./types";
 
@@ -150,13 +149,11 @@ describe("receipt totals & aggregates", () => {
     expect(cartTotal(r1.lines)).toBe(receiptTotal(r1.lines)); // cart uses the same rule
   });
 
-  it("calculates a rounded percentage discount and parses Arabic percentage digits", () => {
-    expect(calculateDiscountPiastres(10_001, 12.5)).toBe(1_250);
-    expect(calculateDiscountPiastres(10_000, 100)).toBe(10_000);
-    expect(parseDiscountPercent("١٢٫٥")).toBe(12.5);
-    expect(parseDiscountPercent("0")).toBeNull();
-    expect(parseDiscountPercent("100.01")).toBeNull();
-    expect(() => calculateDiscountPiastres(10_000, 101)).toThrow("invalid_discount");
+  it("subtracts a fixed discount amount and rejects discounts above the subtotal", () => {
+    expect(totalAfterDiscount(10_000, 1_250)).toBe(8_750);
+    expect(totalAfterDiscount(10_000, 10_000)).toBe(0);
+    expect(() => totalAfterDiscount(10_000, 10_001)).toThrow("invalid_discount");
+    expect(() => totalAfterDiscount(10_000, 1.5)).toThrow("invalid_discount");
   });
 
   it("salesTotal & soldCount & average", () => {

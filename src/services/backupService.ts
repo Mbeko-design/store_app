@@ -76,6 +76,7 @@ function isStockMove(value: unknown): value is StockMove {
   return isRecord(value) && isString(value.id) && isString(value.productId) &&
     ["in", "sale", "adjust"].includes(String(value.type)) && Number.isSafeInteger(value.qty) &&
     isString(value.createdAtIso) && (value.refReceiptId === undefined || isString(value.refReceiptId)) &&
+    (value.supplierName === undefined || (isString(value.supplierName) && value.supplierName.length <= 80)) &&
     (value.note === undefined || isString(value.note));
 }
 

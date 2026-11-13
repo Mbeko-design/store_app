@@ -236,9 +236,6 @@ export function SalesPage() {
                               <span className="bidi">{formatEgp(r.subtotalPiastres ?? r.totalPiastres + r.discountPiastres)}</span>
                             </div>
                             <div className="flex justify-between gap-3">
-                              <span>كود الخصم: {r.discountCode} ({r.discountPercent}%)</span>
-                            </div>
-                            <div className="flex justify-between gap-3 text-ink-2">
                               <span>قيمة الخصم</span>
                               <span className="bidi">−{formatEgp(r.discountPiastres)}</span>
                             </div>

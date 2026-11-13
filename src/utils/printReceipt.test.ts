@@ -30,18 +30,16 @@ describe("80 mm receipt print layout", () => {
     expect(html).not.toContain("<محول & كابل>");
   });
 
-  it("prints the discount code and amount on discounted receipts", () => {
+  it("prints the fixed discount amount without a code", () => {
     const html = receiptPrintHtml({
       ...example,
       subtotalPiastres: 25000,
-      discountCode: "SAVE10",
-      discountPercent: 10,
       discountPiastres: 2500,
       totalPiastres: 22500,
     });
-    expect(html).toContain("خصم SAVE10 (10%)");
+    expect(html).toContain("قيمة الخصم");
     expect(html).toContain("25 جنيه");
-    expect(html).toContain("−25 جنيه");
+    expect(html).not.toContain("SAVE10");
     expect(html).toContain("225 جنيه");
   });
 });

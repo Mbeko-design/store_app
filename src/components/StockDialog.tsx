@@ -30,13 +30,17 @@ export function StockDialog({
 }) {
   const toast = useToast();
   const [qty, setQty] = useState("");
+  const [supplierName, setSupplierName] = useState("");
   const [error, setError] = useState<string | undefined>();
+  const [supplierError, setSupplierError] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setQty(mode === "count" ? String(stock) : "");
+    setSupplierName("");
     setError(undefined);
+    setSupplierError(undefined);
     setSaving(false);
   }, [open, mode, stock]);
 
@@ -61,12 +65,20 @@ export function StockDialog({
       setError(parsed.error);
       return;
     }
+    if (mode === "in" && supplierName.trim().length > 80) {
+      setSupplierError("اسم المورد يجب ألا يزيد عن 80 حرفًا");
+      return;
+    }
     const printWindow = mode === "in" ? reserveBarcodePrintWindow() : null;
     setSaving(true);
     try {
       if (mode === "in") {
-        await stockIn(product.id, qty);
-        toast.success(`تم إدخال ${parsed.qty} قطعة للمخزون`);
+        await stockIn(product.id, qty, supplierName);
+        toast.success(
+          supplierName.trim()
+            ? `تم إدخال ${parsed.qty} قطعة من المورد ${supplierName.trim()}`
+            : `تم إدخال ${parsed.qty} قطعة للمخزون`,
+        );
       } else {
         const res = await applyStockCount(product.id, parsed.qty);
         toast.success(
@@ -89,7 +101,11 @@ export function StockDialog({
       }
     } catch (err) {
       printWindow?.close();
-      toast.error(err instanceof Error && err.message === "not_found" ? "المنتج غير موجود" : "تعذر حفظ الحركة");
+      if (err instanceof Error && err.message === "invalid_supplier") {
+        setSupplierError("اسم المورد يجب ألا يزيد عن 80 حرفًا");
+      } else {
+        toast.error(err instanceof Error && err.message === "not_found" ? "المنتج غير موجود" : "تعذر حفظ الحركة");
+      }
     } finally {
       setSaving(false);
     }
@@ -130,6 +146,22 @@ export function StockDialog({
         </div>
 
         <form onSubmit={submit} noValidate className="mt-4 space-y-4">
+          {mode === "in" && (
+            <Field label="اسم المورد (اختياري)" htmlFor="stock-supplier" error={supplierError}>
+              <input
+                id="stock-supplier"
+                type="text"
+                maxLength={80}
+                value={supplierName}
+                onChange={(e) => {
+                  setSupplierName(e.target.value);
+                  setSupplierError(undefined);
+                }}
+                placeholder="اسم المورد الذي اشتريت منه"
+                className={inputCls}
+              />
+            </Field>
+          )}
           <Field
             label={mode === "in" ? "الكمية الواردة" : "الكمية المعدودة فعليًا"}
             htmlFor="stock-qty"

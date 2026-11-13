@@ -55,7 +55,10 @@ export interface Receipt {
   lines: ReceiptLine[];
   /** Sale total before discounts. Missing on legacy receipts; treat totalPiastres as subtotal. */
   subtotalPiastres?: number;
+  /** Legacy fields retained only so existing receipts/backups remain readable. */
+  /** @deprecated New receipts use a fixed discount amount and never store a code. */
   discountCode?: string;
+  /** @deprecated New receipts use a fixed discount amount. */
   discountPercent?: number;
   discountPiastres?: number;
   totalPiastres: number; // final total after discount
@@ -71,6 +74,7 @@ export interface StockMove {
   qty: number;
   /** Receipt that produced a "sale" move (audit trail). */
   refReceiptId?: string;
+  supplierName?: string;
   note?: string;
   createdAtIso: string;
 }

@@ -11,28 +11,17 @@ export function receiptTotal(lines: ReceiptLine[]): number {
   return lines.reduce((sum, l) => sum + l.pricePiastres * l.qty, 0);
 }
 
-export function calculateDiscountPiastres(subtotalPiastres: number, percentage: number): number {
+export function totalAfterDiscount(subtotalPiastres: number, discountPiastres: number): number {
   if (
     !Number.isSafeInteger(subtotalPiastres) ||
     subtotalPiastres < 0 ||
-    !Number.isFinite(percentage) ||
-    percentage < 0 ||
-    percentage > 100
+    !Number.isSafeInteger(discountPiastres) ||
+    discountPiastres < 0 ||
+    discountPiastres > subtotalPiastres
   ) {
     throw new Error("invalid_discount");
   }
-  return Math.round((subtotalPiastres * percentage) / 100);
-}
-
-export function parseDiscountPercent(raw: string): number | null {
-  const normalized = raw
-    .trim()
-    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)))
-    .replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
-    .replace(/[٫]/g, ".");
-  if (!/^(?:\d{1,2}(?:\.\d{1,2})?|100(?:\.0{1,2})?)$/.test(normalized)) return null;
-  const percentage = Number(normalized);
-  return percentage > 0 && percentage <= 100 ? percentage : null;
+  return subtotalPiastres - discountPiastres;
 }
 
 export function receiptsInRange(receipts: Receipt[], start: Date, end: Date): Receipt[] {

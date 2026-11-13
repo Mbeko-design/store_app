@@ -14,6 +14,7 @@ export interface CreateProductInput {
   costPiastres: number;
   /** Initial quantity at registration (0 → no stock move needed). */
   initialQty: number;
+  supplierName?: string;
 }
 
 async function assertBarcodeUnique(barcode: string, currentId?: string): Promise<void> {
@@ -40,6 +41,8 @@ async function createUniqueInternalBarcode(): Promise<{ id: string; barcode: str
 
 export async function createProduct(input: CreateProductInput): Promise<Product> {
   const requestedBarcode = normalizeBarcode(input.barcode);
+  const supplierName = input.supplierName?.trim();
+  if (supplierName && supplierName.length > 80) throw new Error("invalid_supplier");
   return db.transaction("rw", db.products, db.stockMoves, async () => {
     const generated = requestedBarcode ? undefined : await createUniqueInternalBarcode();
     const id = generated?.id ?? newId();
@@ -61,6 +64,7 @@ export async function createProduct(input: CreateProductInput): Promise<Product>
         type: "in",
         qty: input.initialQty,
         note: "رصيد افتتاحي",
+        ...(supplierName ? { supplierName } : {}),
         createdAtIso: new Date().toISOString(),
       } satisfies StockMove);
     }
@@ -152,9 +156,11 @@ export async function applyStockCount(
 }
 
 /** Supplier/registration stock-in (positive qty, validated). */
-export async function stockIn(productId: string, qtyRaw: string, note?: string): Promise<number> {
+export async function stockIn(productId: string, qtyRaw: string, supplierName?: string): Promise<number> {
   const parsed = parseStockInQty(qtyRaw);
   if (!parsed.ok) throw new Error(parsed.error);
+  const supplier = supplierName?.trim();
+  if (supplier && supplier.length > 80) throw new Error("invalid_supplier");
   return db.transaction("rw", db.products, db.stockMoves, async () => {
     const product = await db.products.get(productId);
     if (!product) throw new Error("not_found");
@@ -164,7 +170,7 @@ export async function stockIn(productId: string, qtyRaw: string, note?: string):
       productId,
       type: "in",
       qty: parsed.qty,
-      ...(note?.trim() ? { note: note.trim() } : {}),
+      ...(supplier ? { supplierName: supplier } : {}),
       createdAtIso: new Date().toISOString(),
     } satisfies StockMove);
     return parsed.qty;

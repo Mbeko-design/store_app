@@ -20,6 +20,14 @@ describe("backup validation", () => {
       createdAtIso: "2026-11-10T00:00:00.000Z",
       data: {
         ...emptyData,
+        stockMoves: [{
+          id: "move-1",
+          productId: "product-1",
+          type: "in",
+          qty: 3,
+          supplierName: "المورد الأول",
+          createdAtIso: "2026-11-10T00:00:00.000Z",
+        }],
         shopAssets: [{
           id: "asset-1",
           name: "طابعة",
@@ -30,6 +38,7 @@ describe("backup validation", () => {
     }));
 
     expect(backup.data.shopAssets[0]?.owner).toBe("fouad");
+    expect(backup.data.stockMoves[0]?.supplierName).toBe("المورد الأول");
   });
 
   it("rejects unsupported versions and malformed rows", () => {
