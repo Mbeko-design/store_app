@@ -53,7 +53,12 @@ export interface Receipt {
   id: string;
   number: number; // sequential receipt number (1, 2, 3 …)
   lines: ReceiptLine[];
-  totalPiastres: number; // derived from lines at save time (stored for fast lists)
+  /** Sale total before discounts. Missing on legacy receipts; treat totalPiastres as subtotal. */
+  subtotalPiastres?: number;
+  discountCode?: string;
+  discountPercent?: number;
+  discountPiastres?: number;
+  totalPiastres: number; // final total after discount
   paymentMethod: PaymentMethod;
   createdAtIso: string;
 }

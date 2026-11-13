@@ -1,6 +1,7 @@
 import {
   cartStockConflict,
   cartTotal,
+  calculateDiscountPiastres,
   type CartLine,
   type PaymentMethod,
   type Product,
@@ -16,6 +17,8 @@ import { db } from "./db";
 export interface SaveReceiptInput {
   lines: CartLine[];
   paymentMethod: PaymentMethod;
+  discountCode?: string;
+  discountPercent?: number;
 }
 
 const SEQ_KEY = "receiptSeq";
@@ -27,6 +30,18 @@ const SEQ_KEY = "receiptSeq";
  */
 export async function saveReceipt(input: SaveReceiptInput): Promise<Receipt> {
   if (input.lines.length === 0) throw new Error("empty_receipt");
+
+  const discountCode = input.discountCode?.trim();
+  const hasDiscount = Boolean(discountCode) || input.discountPercent !== undefined;
+  if (hasDiscount && (!discountCode || discountCode.length > 60 || input.discountPercent === undefined)) {
+    throw new Error("invalid_discount");
+  }
+  if (
+    input.discountPercent !== undefined &&
+    (!discountCode || !Number.isFinite(input.discountPercent) || input.discountPercent <= 0 || input.discountPercent > 100)
+  ) {
+    throw new Error("invalid_discount");
+  }
 
   return db.transaction("rw", db.products, db.receipts, db.stockMoves, db.settings, async () => {
     // Snapshot stock for the referenced products, then re-validate the cart.
@@ -47,6 +62,9 @@ export async function saveReceipt(input: SaveReceiptInput): Promise<Receipt> {
     const seqRow = await db.settings.get(SEQ_KEY);
     const number = (seqRow ? Number(seqRow.value) || 0 : 0) + 1;
     const nowIso = new Date().toISOString();
+    const subtotalPiastres = cartTotal(input.lines);
+    const discountPiastres =
+      input.discountPercent === undefined ? 0 : calculateDiscountPiastres(subtotalPiastres, input.discountPercent);
     const receipt: Receipt = {
       id: newId(),
       number,
@@ -54,7 +72,15 @@ export async function saveReceipt(input: SaveReceiptInput): Promise<Receipt> {
         const costPiastres = products.get(line.productId)?.costPiastres;
         return { ...line, ...(costPiastres !== undefined ? { costPiastres } : {}) };
       }), // snapshot lines (including current wholesale cost)
-      totalPiastres: cartTotal(input.lines),
+      ...(hasDiscount
+        ? {
+            subtotalPiastres,
+            discountCode,
+            discountPercent: input.discountPercent,
+            discountPiastres,
+          }
+        : {}),
+      totalPiastres: subtotalPiastres - discountPiastres,
       paymentMethod: input.paymentMethod,
       createdAtIso: nowIso,
     };

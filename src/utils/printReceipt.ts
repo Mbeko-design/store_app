@@ -15,6 +15,12 @@ function escapeHtml(value: string): string {
 }
 
 export function receiptPrintHtml(receipt: Receipt): string {
+  const subtotalPiastres = receipt.subtotalPiastres ?? receipt.totalPiastres;
+  const discountRow = receipt.discountPiastres
+    ? `<div class="summary-row"><span>قبل الخصم</span><strong>${escapeHtml(formatEgp(subtotalPiastres))}</strong></div>
+       <div class="summary-row"><span>خصم ${escapeHtml(receipt.discountCode ?? "")} (${receipt.discountPercent ?? 0}%)</span>
+       <strong>−${escapeHtml(formatEgp(receipt.discountPiastres))}</strong></div>`
+    : "";
   const rows = receipt.lines
     .map(
       (line) => `
@@ -50,6 +56,7 @@ export function receiptPrintHtml(receipt: Receipt): string {
           .name { margin: 0 0 1mm; font-weight: 700; overflow-wrap: anywhere; }
           .line-details, .total { display: flex; justify-content: space-between; gap: 2mm; }
           .line-details { font-size: 9pt; }
+          .summary-row { display: flex; justify-content: space-between; gap: 2mm; margin-top: 1.5mm; font-size: 9pt; }
           .total { margin-top: 2mm; padding-top: 2mm; border-top: 1px solid #000; font-size: 12pt; font-weight: 700; }
           .thanks { margin: 4mm 0 0; padding-top: 2mm; border-top: 1px dashed #555; font-size: 9pt; }
           @media screen {
@@ -67,6 +74,7 @@ export function receiptPrintHtml(receipt: Receipt): string {
             <span>طريقة الدفع: ${escapeHtml(PAYMENT_LABEL[receipt.paymentMethod])}</span>
           </div>
           <ul class="lines">${rows}</ul>
+          ${discountRow}
           <div class="total"><span>الإجمالي</span><span>${escapeHtml(formatEgp(receipt.totalPiastres))}</span></div>
           <p class="thanks">شكرًا لزيارتكم</p>
         </main>

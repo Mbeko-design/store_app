@@ -63,6 +63,12 @@ function isReceiptLine(value: unknown): boolean {
 function isReceipt(value: unknown): value is Receipt {
   return isRecord(value) && isString(value.id) && isNonNegativeInteger(value.number) &&
     Array.isArray(value.lines) && value.lines.every(isReceiptLine) && isNonNegativeInteger(value.totalPiastres) &&
+    (value.subtotalPiastres === undefined || isNonNegativeInteger(value.subtotalPiastres)) &&
+    (value.discountCode === undefined || (isString(value.discountCode) && value.discountCode.length <= 60)) &&
+    (value.discountPercent === undefined ||
+      (typeof value.discountPercent === "number" && Number.isFinite(value.discountPercent) &&
+        value.discountPercent > 0 && value.discountPercent <= 100)) &&
+    (value.discountPiastres === undefined || isNonNegativeInteger(value.discountPiastres)) &&
     ["cash", "vodafone"].includes(String(value.paymentMethod)) && isString(value.createdAtIso);
 }
 

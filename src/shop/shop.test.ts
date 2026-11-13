@@ -5,8 +5,10 @@ import {
   cartCount,
   cartStockConflict,
   cartTotal,
+  calculateDiscountPiastres,
   lowStockRows,
   PAYMENT_LABEL,
+  parseDiscountPercent,
   receiptTotal,
   receiptsByMethod,
   receiptsInRange,
@@ -148,6 +150,15 @@ describe("receipt totals & aggregates", () => {
     expect(cartTotal(r1.lines)).toBe(receiptTotal(r1.lines)); // cart uses the same rule
   });
 
+  it("calculates a rounded percentage discount and parses Arabic percentage digits", () => {
+    expect(calculateDiscountPiastres(10_001, 12.5)).toBe(1_250);
+    expect(calculateDiscountPiastres(10_000, 100)).toBe(10_000);
+    expect(parseDiscountPercent("١٢٫٥")).toBe(12.5);
+    expect(parseDiscountPercent("0")).toBeNull();
+    expect(parseDiscountPercent("100.01")).toBeNull();
+    expect(() => calculateDiscountPiastres(10_000, 101)).toThrow("invalid_discount");
+  });
+
   it("salesTotal & soldCount & average", () => {
     expect(salesTotal([r1, r2])).toBe(250_00 + 100_00);
     expect(soldCount([r1, r2])).toBe(4);
@@ -184,6 +195,14 @@ describe("receipt totals & aggregates", () => {
       uncostedLineCount: 1,
       estimatedLegacyLineCount: 1,
     });
+
+  });
+
+  it("subtracts receipt discounts from estimated gross profit", () => {
+    const discounted = receipt("r4", [["a", 1, 100]]);
+    discounted.discountPiastres = 10_00;
+    discounted.totalPiastres -= discounted.discountPiastres;
+    expect(salesProfit([discounted], [p("a", 100, "BCa", 60)]).profitPiastres).toBe(30_00);
   });
 });
 

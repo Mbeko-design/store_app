@@ -229,6 +229,25 @@ export function SalesPage() {
                             ))}
                           </tbody>
                         </table>
+                        {r.discountPiastres !== undefined && r.discountPiastres > 0 && (
+                          <div className="mt-3 space-y-1 border-t border-line pt-3 text-sm">
+                            <div className="flex justify-between gap-3">
+                              <span>الإجمالي قبل الخصم</span>
+                              <span className="bidi">{formatEgp(r.subtotalPiastres ?? r.totalPiastres + r.discountPiastres)}</span>
+                            </div>
+                            <div className="flex justify-between gap-3">
+                              <span>كود الخصم: {r.discountCode} ({r.discountPercent}%)</span>
+                            </div>
+                            <div className="flex justify-between gap-3 text-ink-2">
+                              <span>قيمة الخصم</span>
+                              <span className="bidi">−{formatEgp(r.discountPiastres)}</span>
+                            </div>
+                            <div className="flex justify-between gap-3 font-extrabold">
+                              <span>الإجمالي بعد الخصم</span>
+                              <span className="bidi">{formatEgp(r.totalPiastres)}</span>
+                            </div>
+                          </div>
+                        )}
                         <div className="mt-3 flex justify-end">
                           <ReceiptPrintButton receipt={r} />
                         </div>

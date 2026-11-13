@@ -1,5 +1,16 @@
 import { useMemo, useRef, useState } from "react";
-import { addToCart, cartCount, cartTotal, removeLine, setLineQty, type CartLine, type PaymentMethod, type Receipt } from "../shop";
+import {
+  addToCart,
+  calculateDiscountPiastres,
+  cartCount,
+  cartTotal,
+  parseDiscountPercent,
+  removeLine,
+  setLineQty,
+  type CartLine,
+  type PaymentMethod,
+  type Receipt,
+} from "../shop";
 import { PAYMENT_LABEL } from "../shop/types";
 import { findByBarcode } from "../services/productsService";
 import { saveReceipt } from "../services/receiptsService";
@@ -11,6 +22,7 @@ import { Icon } from "../components/Icon";
 import { ProductFormDialog } from "../components/ProductFormDialog";
 import { PaymentBadge } from "../components/ShopBadges";
 import { ReceiptPrintButton } from "../components/ReceiptPrintButton";
+import { Field, inputCls } from "../components/Field";
 import { useToast } from "../components/Toast";
 import { formatEgp, formatTime } from "../utils/format";
 
@@ -29,6 +41,9 @@ export function PosPage() {
   const [scanValue, setScanValue] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
   const [method, setMethod] = useState<PaymentMethod>("cash");
+  const [discountCode, setDiscountCode] = useState("");
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [discountError, setDiscountError] = useState<string | undefined>();
   const [scanError, setScanError] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<Receipt | null>(null);
@@ -40,6 +55,11 @@ export function PosPage() {
   }, [view]);
 
   const focusScan = () => requestAnimationFrame(() => scanRef.current?.focus());
+  const subtotalPiastres = cartTotal(cart);
+  const parsedDiscountPercent = parseDiscountPercent(discountPercent);
+  const discountPiastres =
+    parsedDiscountPercent === null ? 0 : calculateDiscountPiastres(subtotalPiastres, parsedDiscountPercent);
+  const finalTotalPiastres = subtotalPiastres - discountPiastres;
 
   const onScan = async (code: string) => {
     if (!view) return;
@@ -56,7 +76,12 @@ export function PosPage() {
     }
     // Any new scan dismisses the "saved receipt" panel → fresh receipt.
     const baseCart = saved ? [] : cart;
-    if (saved) setSaved(null);
+    if (saved) {
+      setSaved(null);
+      setDiscountCode("");
+      setDiscountPercent("");
+      setDiscountError(undefined);
+    }
 
     const res = addToCart(baseCart, product, stockOf(product.id));
     if (res.error === "out_of_stock") {
@@ -69,17 +94,41 @@ export function PosPage() {
 
   const submit = async () => {
     if (saving || cart.length === 0) return; // double-submit guard
+    const discountCodeValue = discountCode.trim();
+    const hasDiscount = Boolean(discountCodeValue) || Boolean(discountPercent.trim());
+    if (hasDiscount && (!discountCodeValue || discountCodeValue.length > 60 || parsedDiscountPercent === null)) {
+      setDiscountError(
+        !discountCodeValue
+          ? "أدخل كود الخصم"
+          : discountCodeValue.length > 60
+            ? "كود الخصم يجب ألا يزيد عن 60 حرفًا"
+            : "أدخل نسبة خصم أكبر من 0 وحتى 100%",
+      );
+      return;
+    }
+    setDiscountError(undefined);
     setSaving(true);
     try {
-      const receipt = await saveReceipt({ lines: cart, paymentMethod: method });
+      const discount = hasDiscount && parsedDiscountPercent !== null
+        ? { discountCode: discountCodeValue, discountPercent: parsedDiscountPercent }
+        : {};
+      const receipt = await saveReceipt({
+        lines: cart,
+        paymentMethod: method,
+        ...discount,
+      });
       setSaved(receipt);
       setCart([]);
+      setDiscountCode("");
+      setDiscountPercent("");
       setScanError(undefined);
       toast.success(`تم حفظ الفاتورة رقم ${receipt.number}`);
       focusScan();
     } catch (err) {
       const code = err instanceof Error ? err.message : "";
-      if (code === "insufficient_stock" || code === "product_missing" || code === "product_archived") {
+      if (code === "invalid_discount") {
+        setDiscountError("بيانات الخصم غير صحيحة؛ راجع الكود والنسبة");
+      } else if (code === "insufficient_stock" || code === "product_missing" || code === "product_archived") {
         toast.error(
           code === "product_archived"
             ? "تمت أرشفة أحد الأصناف — أعده من قائمة المنتجات قبل البيع"
@@ -96,6 +145,9 @@ export function PosPage() {
 
   const clearCart = () => {
     setCart([]);
+    setDiscountCode("");
+    setDiscountPercent("");
+    setDiscountError(undefined);
     setScanError(undefined);
     focusScan();
   };
@@ -170,7 +222,15 @@ export function PosPage() {
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <ReceiptPrintButton receipt={saved} />
-            <Button type="button" variant="secondary" onClick={() => setSaved(null)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setSaved(null);
+                setDiscountCode("");
+                setDiscountPercent("");
+              }}
+            >
               فاتورة جديدة
             </Button>
           </div>
@@ -253,6 +313,40 @@ export function PosPage() {
 
       {/* Payment + save */}
       <section aria-label="الدفع والحفظ" className="rounded-lg border border-line bg-card p-4 shadow-card">
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <Field label="كود الخصم (اختياري)" htmlFor="discount-code">
+            <input
+              id="discount-code"
+              type="text"
+              maxLength={60}
+              autoComplete="off"
+              value={discountCode}
+              onChange={(event) => {
+                setDiscountCode(event.target.value);
+                setDiscountError(undefined);
+              }}
+              placeholder="مثال: SAVE10"
+              className={inputCls}
+            />
+          </Field>
+          <Field label="نسبة الخصم (%)" htmlFor="discount-percent" hint="أدخل نسبة أكبر من 0 وحتى 100">
+            <input
+              id="discount-percent"
+              type="text"
+              inputMode="decimal"
+              dir="ltr"
+              value={discountPercent}
+              onChange={(event) => {
+                setDiscountPercent(event.target.value);
+                setDiscountError(undefined);
+              }}
+              placeholder="10"
+              className={inputCls}
+            />
+          </Field>
+        </div>
+        {discountError && <p className="mb-3 text-sm font-bold text-neg" role="alert">{discountError}</p>}
+
         <div>
           <span className="mb-2 block text-sm font-bold text-ink-2" id="pay-method-label">
             طريقة الدفع
@@ -280,9 +374,25 @@ export function PosPage() {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
-          <span className="text-sm font-bold text-ink-2">الإجمالي</span>
-          <span className="bidi text-2xl font-extrabold text-brand">{formatEgp(cartTotal(cart))}</span>
+        <div className="mt-4 space-y-2 border-t border-line pt-4">
+          {discountPiastres > 0 && (
+            <>
+              <div className="flex items-center justify-between gap-3 text-sm text-ink-2">
+                <span>قبل الخصم</span>
+                <span className="bidi">{formatEgp(subtotalPiastres)}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm font-bold text-pos">
+                <span>
+                  الخصم ({discountCode.trim()} · {parsedDiscountPercent}%)
+                </span>
+                <span className="bidi">−{formatEgp(discountPiastres)}</span>
+              </div>
+            </>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-bold text-ink-2">الإجمالي المستحق</span>
+            <span className="bidi text-2xl font-extrabold text-brand">{formatEgp(finalTotalPiastres)}</span>
+          </div>
         </div>
 
         <Button type="button" variant="primary" className="mt-4 w-full" loading={saving} disabled={cart.length === 0} onClick={submit}>
