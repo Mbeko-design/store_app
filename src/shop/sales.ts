@@ -1,8 +1,8 @@
 import { isWithin } from "../utils/dates";
-import type { PaymentMethod, Product, Receipt, ReceiptLine } from "./types";
+import type { PaymentMethod, Product, Receipt, ReceiptLine, SaleReturn } from "./types";
 
 /**
- * Sales/report math — derived ONLY from receipts (append-only source of truth).
+ * Sales/report math — derived from append-only receipts and return records.
  * UI receives these results and never contains aggregation formulas.
  */
 
@@ -28,8 +28,28 @@ export function receiptsInRange(receipts: Receipt[], start: Date, end: Date): Re
   return receipts.filter((r) => isWithin(r.createdAtIso, start, end));
 }
 
-export function salesTotal(receipts: Receipt[]): number {
-  return receipts.reduce((sum, r) => sum + r.totalPiastres, 0);
+export function returnsInRange(returns: SaleReturn[], start: Date, end: Date): SaleReturn[] {
+  return returns.filter((r) => isWithin(r.createdAtIso, start, end));
+}
+
+export function returnableQuantity(productId: string, receipts: Receipt[], returns: SaleReturn[]): number {
+  const sold = receipts.reduce(
+    (sum, receipt) => sum + receipt.lines.reduce((lineSum, line) => lineSum + (line.productId === productId ? line.qty : 0), 0),
+    0,
+  );
+  const returned = returns.reduce(
+    (sum, record) => sum + record.lines.reduce((lineSum, line) => lineSum + (line.productId === productId ? line.qty : 0), 0),
+    0,
+  );
+  return Math.max(0, sold - returned);
+}
+
+export function returnsTotal(returns: SaleReturn[]): number {
+  return returns.reduce((sum, record) => sum + record.totalPiastres, 0);
+}
+
+export function salesTotal(receipts: Receipt[], returns: SaleReturn[] = []): number {
+  return receipts.reduce((sum, r) => sum + r.totalPiastres, 0) - returnsTotal(returns);
 }
 
 export interface SalesProfit {
@@ -42,7 +62,7 @@ export interface SalesProfit {
  * Gross profit from sale-time cost snapshots; legacy receipts fall back to the
  * product's current cost and are explicitly counted as estimates.
  */
-export function salesProfit(receipts: Receipt[], products: Product[]): SalesProfit {
+export function salesProfit(receipts: Receipt[], products: Product[], returns: SaleReturn[] = []): SalesProfit {
   const costByProduct = new Map(products.map((product) => [product.id, product.costPiastres]));
   let profitPiastres = 0;
   let uncostedLineCount = 0;
@@ -62,6 +82,20 @@ export function salesProfit(receipts: Receipt[], products: Product[]): SalesProf
     }
   }
 
+  for (const record of returns) {
+    for (const line of record.lines) {
+      if (line.costPiastres === undefined) {
+        uncostedLineCount += 1;
+        continue;
+      }
+      if (line.costPiastres <= 0) {
+        uncostedLineCount += 1;
+        continue;
+      }
+      profitPiastres -= (line.pricePiastres - line.costPiastres) * line.qty;
+    }
+  }
+
   return { profitPiastres, uncostedLineCount, estimatedLegacyLineCount };
 }
 
@@ -74,8 +108,8 @@ export function soldCount(receipts: Receipt[]): number {
 }
 
 /** Average receipt value (0 when empty — callers guard the display). */
-export function averageReceipt(receipts: Receipt[]): number {
-  return receipts.length === 0 ? 0 : Math.round(salesTotal(receipts) / receipts.length);
+export function averageReceipt(receipts: Receipt[], returns: SaleReturn[] = []): number {
+  return receipts.length === 0 ? 0 : Math.round(salesTotal(receipts, returns) / receipts.length);
 }
 
 export interface SoldItem {
@@ -88,7 +122,7 @@ export interface SoldItem {
 }
 
 /** Aggregated sold items across receipts — qty desc, then revenue desc. */
-export function soldItems(receipts: Receipt[]): SoldItem[] {
+export function soldItems(receipts: Receipt[], returns: SaleReturn[] = []): SoldItem[] {
   const byId = new Map<string, SoldItem & { receiptIds: Set<string> }>();
   for (const r of receipts) {
     for (const l of r.lines) {
@@ -110,8 +144,28 @@ export function soldItems(receipts: Receipt[]): SoldItem[] {
       row.receiptIds.add(r.id);
     }
   }
+  for (const record of returns) {
+    for (const line of record.lines) {
+      let row = byId.get(line.productId);
+      if (!row) {
+        row = {
+          productId: line.productId,
+          name: line.name,
+          barcode: line.barcode,
+          qty: 0,
+          revenuePiastres: 0,
+          receiptsCount: 0,
+          receiptIds: new Set(),
+        };
+        byId.set(line.productId, row);
+      }
+      row.qty -= line.qty;
+      row.revenuePiastres -= line.pricePiastres * line.qty;
+    }
+  }
   return [...byId.values()]
     .map(({ receiptIds, ...row }) => ({ ...row, receiptsCount: receiptIds.size }))
+    .filter((row) => row.qty !== 0 || row.revenuePiastres !== 0)
     .sort((a, b) => b.qty - a.qty || b.revenuePiastres - a.revenuePiastres);
 }
 

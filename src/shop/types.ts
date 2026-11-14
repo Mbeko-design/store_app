@@ -7,7 +7,7 @@
 export type PaymentMethod = "cash" | "vodafone";
 
 /** "in" = stock-in (registration / supplier), "sale" = receipt line, "adjust" = correction (signed). */
-export type StockMoveType = "in" | "sale" | "adjust";
+export type StockMoveType = "in" | "sale" | "return" | "adjust";
 
 export const PAYMENT_METHODS: readonly PaymentMethod[] = ["cash", "vodafone"] as const;
 
@@ -66,14 +66,33 @@ export interface Receipt {
   createdAtIso: string;
 }
 
+export interface ReturnLine {
+  productId: string;
+  barcode: string;
+  name: string;
+  pricePiastres: number;
+  costPiastres?: number;
+  qty: number;
+}
+
+export interface SaleReturn {
+  id: string;
+  number: number;
+  lines: ReturnLine[];
+  totalPiastres: number;
+  paymentMethod: PaymentMethod;
+  createdAtIso: string;
+}
+
 export interface StockMove {
   id: string;
   productId: string;
   type: StockMoveType;
-  /** in/sale: positive; adjust: signed correction. */
+  /** in/sale/return: positive; adjust: signed correction. */
   qty: number;
-  /** Receipt that produced a "sale" move (audit trail). */
+  /** Receipt or return that produced this move (audit trail). */
   refReceiptId?: string;
+  refReturnId?: string;
   supplierName?: string;
   note?: string;
   createdAtIso: string;

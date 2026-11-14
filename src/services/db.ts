@@ -1,6 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type { Account, Operation } from "../accounting/types";
-import type { Product, Receipt, ShopAsset, StockMove } from "../shop/types";
+import type { Product, Receipt, SaleReturn, ShopAsset, StockMove } from "../shop/types";
 
 /**
  * Basata Tech (بساطه تك) persistence: IndexedDB via Dexie — LOCAL ONLY.
@@ -8,7 +8,7 @@ import type { Product, Receipt, ShopAsset, StockMove } from "../shop/types";
  * No backend, no sync: data lives in this browser/device (see README "Known limitations").
  */
 export interface SettingsRow {
-  key: "previewData" | "receiptSeq";
+  key: "previewData" | "receiptSeq" | "returnSeq";
   value: string; // "1" | "0" | sequence number as string
 }
 
@@ -26,6 +26,7 @@ class CashyDB extends Dexie {
   /** Shop management (separate domain — never touches accounts/operations). */
   products!: Table<Product, string>;
   receipts!: Table<Receipt, string>;
+  returns!: Table<SaleReturn, string>;
   stockMoves!: Table<StockMove, string>;
   shopAssets!: Table<ShopAsset, string>;
 
@@ -64,6 +65,13 @@ class CashyDB extends Dexie {
           asset.owner ??= "fouad";
         }),
       );
+    this.version(5).stores({
+      products: "id, barcode, createdAtIso",
+      receipts: "id, number, createdAtIso",
+      returns: "id, number, createdAtIso",
+      stockMoves: "id, productId, createdAtIso, [productId+type]",
+      shopAssets: "id, createdAtIso",
+    });
   }
 }
 

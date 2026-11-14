@@ -69,14 +69,14 @@ export function ShopDashboardPage() {
       {/* Totals */}
       <section aria-label="إجماليات المتجر" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
-          label="مبيعات اليوم"
+          label="صافي مبيعات اليوم"
           amount={formatEgp(view.totals.salesToday)}
           tone="pos"
           icon="receipt"
           sub={`${view.totals.receiptsToday} فاتورة`}
         />
         <SummaryCard
-          label="إجمالي المبيعات"
+          label="صافي المبيعات"
           amount={formatEgp(view.totals.salesAll)}
           tone="cash"
           icon="chart"

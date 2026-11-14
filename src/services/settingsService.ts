@@ -18,13 +18,14 @@ export async function saveProfile(patch: Partial<Pick<ProfileRow, "name" | "emai
 export async function clearAllData(): Promise<void> {
   await db.transaction(
     "rw",
-    [db.accounts, db.operations, db.products, db.receipts, db.stockMoves, db.shopAssets, db.settings, db.profile],
+    [db.accounts, db.operations, db.products, db.receipts, db.returns, db.stockMoves, db.shopAssets, db.settings, db.profile],
     async () => {
       await Promise.all([
         db.accounts.clear(),
         db.operations.clear(),
         db.products.clear(),
         db.receipts.clear(),
+        db.returns.clear(),
         db.stockMoves.clear(),
         db.shopAssets.clear(),
         db.settings.clear(),

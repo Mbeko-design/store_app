@@ -14,6 +14,7 @@ const SHOP_NAV: Array<{ to: string; label: string; icon: IconName; end?: boolean
   { to: "/shop/pos", label: "نقطة البيع", icon: "receipt" },
   { to: "/shop/inventory", label: "المخزون", icon: "barcode" },
   { to: "/shop/sales", label: "المبيعات", icon: "table" },
+  { to: "/shop/returns", label: "المرتجعات", icon: "receipt" },
 ];
 
 const BOTTOM: Array<{ to: string; label: string; icon: IconName }> = [{ to: "/settings", label: "الإعدادات", icon: "settings" }];

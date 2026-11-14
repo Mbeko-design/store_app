@@ -46,7 +46,8 @@ Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives i
 | 10 | المنتجات (Products) | `/shop/products` | register by **barcode scan**, edit name/price, stock shortcuts, search |
 | 11 | نقطة البيع (POS) | `/shop/pos` | scan → cart → save receipt; unknown barcode opens registration (prefilled) |
 | 12 | المخزون (Inventory) | `/shop/inventory` | stock levels, stock-in (إدخال), physical count (جرد), low/out filters |
-| 13 | المبيعات (Sales) | `/shop/sales` | receipts (expandable lines), **sold-items report**, period/payment filters |
+| 13 | المبيعات (Sales) | `/shop/sales` | receipts (expandable lines), net sales and sold-items report, period/payment filters |
+| 14 | المرتجعات (Returns) | `/shop/returns` | scan/search sold products, partial returns, return history and date/payment filters |
 
 Responsive: right-side **brand-red sidebar on desktop** (labelled sections «إدارة الكاش» / «إدارة المتجر»), collapsible
 drawer on tablet, compact header + **bottom navigation on mobile** (الرئيسية / الحسابات / المتجر /
@@ -68,7 +69,7 @@ src/
 ├── shop/                # ★ PURE shop logic — stock/receipt/cart math (separate domain)
 │   ├── types.ts         # Product, Receipt, StockMove, PaymentMethod
 │   ├── stock.ts         # stockOnHand / stockValue / status (in + adjust − sale)
-│   ├── sales.ts         # totals, sold-items aggregation, today/month windows
+│   ├── sales.ts         # net totals, returns, sold-items aggregation, date windows
 │   ├── cart.ts          # scan→cart rules (increment, stock limit, conflicts)
 │   └── shop.test.ts
 ├── components/          # reusable UI (AppShell, Sidebar, TopHeader, BottomNav, cards,
@@ -166,6 +167,9 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
   (نقدًا / فودافون كاش), optional fixed discount amount in EGP → save. The discount amount and
   net total are stored on the receipt. An **unknown barcode opens the registration dialog prefilled**.
 - **Stock-in:** optionally record the supplier name with each incoming stock movement.
+- **Returns:** search by product name/barcode and return part of the quantity previously sold.
+  Returned stock is added back to inventory and its value is deducted from net sales at the
+  product's current selling price. The return quantity cannot exceed the remaining sold quantity.
 - **Receipt printing:** print the saved invoice from POS or expand an invoice in Sales and
   reprint it. The receipt is formatted for 80 mm thermal rolls; choose the Xprinter and 80 mm
   paper in the browser print dialog (the exact paper option depends on its installed driver).
@@ -173,7 +177,7 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
 ### Stock
 
 ```
-stock = Σ(stock-in) + Σ(corrections, signed) − Σ(sales)
+stock = Σ(stock-in) + Σ(returns) + Σ(corrections, signed) − Σ(sales)
 ```
 
 - Computed only in `src/shop/stock.ts` from `stockMoves` (each move counted once).

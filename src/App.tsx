@@ -16,6 +16,7 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { PosPage } from "./pages/PosPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { SalesPage } from "./pages/SalesPage";
+import { ReturnsPage } from "./pages/ReturnsPage";
 
 /** Content (error-boundary wrapped). */
 function Page() {
@@ -42,6 +43,7 @@ function RoutesContent() {
       <Route path="/shop/pos" element={<PosPage />} />
       <Route path="/shop/inventory" element={<InventoryPage />} />
       <Route path="/shop/sales" element={<SalesPage />} />
+      <Route path="/shop/returns" element={<ReturnsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

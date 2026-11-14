@@ -1,5 +1,5 @@
 import type { Account, Operation } from "../accounting/types";
-import type { Product, Receipt, ShopAsset, StockMove } from "../shop/types";
+import type { Product, Receipt, SaleReturn, ShopAsset, StockMove } from "../shop/types";
 import { db, type ProfileRow, type SettingsRow } from "./db";
 
 const BACKUP_FORMAT = "basata-tech-backup";
@@ -14,6 +14,7 @@ export interface AppBackup {
     operations: Operation[];
     products: Product[];
     receipts: Receipt[];
+    returns: SaleReturn[];
     stockMoves: StockMove[];
     shopAssets: ShopAsset[];
     settings: SettingsRow[];
@@ -72,10 +73,24 @@ function isReceipt(value: unknown): value is Receipt {
     ["cash", "vodafone"].includes(String(value.paymentMethod)) && isString(value.createdAtIso);
 }
 
+function isReturnLine(value: unknown): boolean {
+  return isRecord(value) && isString(value.productId) && isString(value.barcode) && isString(value.name) &&
+    isNonNegativeInteger(value.pricePiastres) && isNonNegativeInteger(value.qty) &&
+    (value.costPiastres === undefined || isNonNegativeInteger(value.costPiastres));
+}
+
+function isSaleReturn(value: unknown): value is SaleReturn {
+  return isRecord(value) && isString(value.id) && isNonNegativeInteger(value.number) &&
+    Array.isArray(value.lines) && value.lines.every(isReturnLine) &&
+    isNonNegativeInteger(value.totalPiastres) &&
+    ["cash", "vodafone"].includes(String(value.paymentMethod)) && isString(value.createdAtIso);
+}
+
 function isStockMove(value: unknown): value is StockMove {
   return isRecord(value) && isString(value.id) && isString(value.productId) &&
-    ["in", "sale", "adjust"].includes(String(value.type)) && Number.isSafeInteger(value.qty) &&
+    ["in", "sale", "return", "adjust"].includes(String(value.type)) && Number.isSafeInteger(value.qty) &&
     isString(value.createdAtIso) && (value.refReceiptId === undefined || isString(value.refReceiptId)) &&
+    (value.refReturnId === undefined || isString(value.refReturnId)) &&
     (value.supplierName === undefined || (isString(value.supplierName) && value.supplierName.length <= 80)) &&
     (value.note === undefined || isString(value.note));
 }
@@ -90,7 +105,7 @@ function isShopAsset(value: unknown): value is BackupShopAsset {
 }
 
 function isSettingsRow(value: unknown): value is SettingsRow {
-  return isRecord(value) && (value.key === "previewData" || value.key === "receiptSeq") && isString(value.value);
+  return isRecord(value) && ["previewData", "receiptSeq", "returnSeq"].includes(String(value.key)) && isString(value.value);
 }
 
 function isProfileRow(value: unknown): value is ProfileRow {
@@ -102,14 +117,15 @@ function isArrayOf<T>(value: unknown, guard: (item: unknown) => item is T): valu
 }
 
 export async function createBackup(): Promise<AppBackup> {
-  const [accounts, operations, products, receipts, stockMoves, shopAssets, settings, profile] = await db.transaction(
+  const [accounts, operations, products, receipts, returns, stockMoves, shopAssets, settings, profile] = await db.transaction(
     "r",
-    [db.accounts, db.operations, db.products, db.receipts, db.stockMoves, db.shopAssets, db.settings, db.profile],
+    [db.accounts, db.operations, db.products, db.receipts, db.returns, db.stockMoves, db.shopAssets, db.settings, db.profile],
     () => Promise.all([
       db.accounts.toArray(),
       db.operations.toArray(),
       db.products.toArray(),
       db.receipts.toArray(),
+      db.returns.toArray(),
       db.stockMoves.toArray(),
       db.shopAssets.toArray(),
       db.settings.toArray(),
@@ -120,7 +136,7 @@ export async function createBackup(): Promise<AppBackup> {
     format: BACKUP_FORMAT,
     version: BACKUP_VERSION,
     createdAtIso: new Date().toISOString(),
-    data: { accounts, operations, products, receipts, stockMoves, shopAssets, settings, profile },
+    data: { accounts, operations, products, receipts, returns, stockMoves, shopAssets, settings, profile },
   };
 }
 
@@ -141,6 +157,7 @@ export function parseBackup(text: string): AppBackup {
       !isArrayOf(data.operations, isOperation) ||
       !isArrayOf(data.products, isProduct) ||
       !isArrayOf(data.receipts, isReceipt) ||
+      (data.returns !== undefined && !isArrayOf(data.returns, isSaleReturn)) ||
       !isArrayOf(data.stockMoves, isStockMove) ||
       !isArrayOf(data.shopAssets, isShopAsset) ||
       !isArrayOf(data.settings, isSettingsRow) ||
@@ -157,6 +174,7 @@ export function parseBackup(text: string): AppBackup {
       operations: data.operations,
       products: data.products,
       receipts: data.receipts,
+      returns: data.returns ?? [],
       stockMoves: data.stockMoves,
       shopAssets: data.shopAssets.map((asset) => ({ ...asset, owner: asset.owner ?? "fouad" })),
       settings: data.settings,
@@ -181,13 +199,14 @@ export async function downloadBackup(): Promise<void> {
 export async function restoreBackup(backup: AppBackup): Promise<void> {
   await db.transaction(
     "rw",
-    [db.accounts, db.operations, db.products, db.receipts, db.stockMoves, db.shopAssets, db.settings, db.profile],
+    [db.accounts, db.operations, db.products, db.receipts, db.returns, db.stockMoves, db.shopAssets, db.settings, db.profile],
     async () => {
       await Promise.all([
         db.accounts.clear(),
         db.operations.clear(),
         db.products.clear(),
         db.receipts.clear(),
+        db.returns.clear(),
         db.stockMoves.clear(),
         db.shopAssets.clear(),
         db.settings.clear(),
@@ -197,6 +216,7 @@ export async function restoreBackup(backup: AppBackup): Promise<void> {
       if (backup.data.operations.length) await db.operations.bulkAdd(backup.data.operations);
       if (backup.data.products.length) await db.products.bulkAdd(backup.data.products);
       if (backup.data.receipts.length) await db.receipts.bulkAdd(backup.data.receipts);
+      if (backup.data.returns.length) await db.returns.bulkAdd(backup.data.returns);
       if (backup.data.stockMoves.length) await db.stockMoves.bulkAdd(backup.data.stockMoves);
       if (backup.data.shopAssets.length) await db.shopAssets.bulkAdd(backup.data.shopAssets);
       if (backup.data.settings.length) await db.settings.bulkAdd(backup.data.settings);

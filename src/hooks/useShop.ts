@@ -4,6 +4,7 @@ import {
   capitalBreakdown,
   lowStockRows,
   receiptsInRange,
+  returnsInRange,
   salesTotal,
   soldCount,
   soldItems,
@@ -14,6 +15,7 @@ import {
   type CapitalBreakdown,
   type Product,
   type Receipt,
+  type SaleReturn,
   type ShopAsset,
   type SoldItem,
   type StockRow,
@@ -21,6 +23,7 @@ import {
 import { listAssets } from "../services/assetsService";
 import { listProducts } from "../services/productsService";
 import { allStockMoves, listReceipts } from "../services/receiptsService";
+import { listReturns } from "../services/returnsService";
 
 /**
  * Shop data hooks — glue between IndexedDB and the PURE shop module.
@@ -44,12 +47,17 @@ export function useReceipts(): Receipt[] | undefined {
   return useLiveQuery(() => listReceipts(), []);
 }
 
+export function useReturns(): SaleReturn[] | undefined {
+  return useLiveQuery(() => listReturns(), []);
+}
+
 export interface ShopView {
   /** All products, including archived ones, for historic sale cost estimates. */
   products: Product[];
   /** Products with derived stock + status. */
   rows: StockRow[];
   receipts: Receipt[]; // newest first
+  returns: SaleReturn[]; // newest first
   sold: SoldItem[]; // aggregated, qty desc
   low: StockRow[]; // نفد / منخفض
   assets: ShopAsset[]; // fixed equipment
@@ -68,8 +76,14 @@ export interface ShopView {
 
 export function useShopView(): ShopView | undefined {
   const data = useLiveQuery(async () => {
-    const [products, receipts, moves, assets] = await Promise.all([listProducts(true), listReceipts(), allStockMoves(), listAssets()]);
-    return { products, receipts, moves, assets };
+    const [products, receipts, returns, moves, assets] = await Promise.all([
+      listProducts(true),
+      listReceipts(),
+      listReturns(),
+      allStockMoves(),
+      listAssets(),
+    ]);
+    return { products, receipts, returns, moves, assets };
   }, []);
 
   return useMemo(() => {
@@ -78,17 +92,19 @@ export function useShopView(): ShopView | undefined {
     const rows = stockTable(activeProducts, data.moves);
     const { start, end } = todayRange();
     const todays = receiptsInRange(data.receipts, start, end);
+    const todaysReturns = returnsInRange(data.returns, start, end);
     return {
       rows,
       products: data.products,
       receipts: data.receipts,
-      sold: soldItems(data.receipts),
+      returns: data.returns,
+      sold: soldItems(data.receipts, data.returns),
       low: lowStockRows(rows),
       assets: data.assets,
       capital: capitalBreakdown(rows, data.assets),
       totals: {
-        salesAll: salesTotal(data.receipts),
-        salesToday: salesTotal(todays),
+        salesAll: salesTotal(data.receipts, data.returns),
+        salesToday: salesTotal(todays, todaysReturns),
         receiptsToday: todays.length,
         piecesToday: soldCount(todays),
         pieces: totalPieces(rows),

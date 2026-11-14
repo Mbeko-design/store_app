@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { buttonCls } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { Icon } from "../components/Icon";
 import { PaymentBadge } from "../components/ShopBadges";
@@ -12,6 +11,7 @@ import { useShopView } from "../hooks/useShop";
 import {
   averageReceipt,
   receiptsInRange,
+  returnsInRange,
   salesProfit,
   salesTotal,
   soldItems,
@@ -75,10 +75,36 @@ export function SalesPage() {
     return list;
   }, [view, period, method, fromDate, toDate]);
 
-  const sold = useMemo(() => soldItems(filtered), [filtered]);
-  const total = useMemo(() => salesTotal(filtered), [filtered]);
-  const average = useMemo(() => averageReceipt(filtered), [filtered]);
-  const profit = useMemo(() => salesProfit(filtered, view?.products ?? []), [filtered, view?.products]);
+  const filteredReturns = useMemo(() => {
+    if (!view) return [];
+    let list = view.returns;
+    if (period === "today") {
+      const { start, end } = todayRange();
+      list = returnsInRange(list, start, end);
+    } else if (period === "month") {
+      const { start, end } = localMonthRange();
+      list = returnsInRange(list, start, end);
+    } else if (period === "custom") {
+      if (fromDate && toDate && fromDate > toDate) return [];
+      const start = fromDate ? new Date(`${fromDate}T00:00:00`) : undefined;
+      const end = toDate ? new Date(`${toDate}T00:00:00`) : undefined;
+      if (end) end.setDate(end.getDate() + 1);
+      list = list.filter((record) => {
+        const time = Date.parse(record.createdAtIso);
+        return (!start || time >= start.getTime()) && (!end || time < end.getTime());
+      });
+    }
+    if (method !== "all") list = list.filter((record) => record.paymentMethod === method);
+    return list;
+  }, [view, period, method, fromDate, toDate]);
+
+  const sold = useMemo(() => soldItems(filtered, filteredReturns), [filtered, filteredReturns]);
+  const total = useMemo(() => salesTotal(filtered, filteredReturns), [filtered, filteredReturns]);
+  const average = useMemo(() => averageReceipt(filtered, filteredReturns), [filtered, filteredReturns]);
+  const profit = useMemo(
+    () => salesProfit(filtered, view?.products ?? [], filteredReturns),
+    [filtered, filteredReturns, view?.products],
+  );
 
   const toggle = (id: string) =>
     setExpanded((prev) => {
@@ -98,27 +124,16 @@ export function SalesPage() {
   }
   if (!view) return null;
 
-  if (view.totals.receipts === 0) {
-    return (
-      <EmptyState
-        icon="receipt"
-        title="لا توجد فواتير بعد"
-        description="سجّل أول فاتورة من نقطة البيع لتظهر هنا مع تقرير القطع المباعة."
-        action={
-          <Link to="/shop/pos" className={buttonCls("primary")}>
-            <Icon name="barcode" size={16} />
-            نقطة البيع
-          </Link>
-        }
-      />
-    );
-  }
-
   const chipCls = (active: boolean) =>
     `h-9 rounded-md px-4 text-sm font-bold transition-colors ${active ? "bg-brand text-white" : "text-ink-2 hover:bg-page"}`;
 
   return (
     <div className="space-y-5">
+      <nav aria-label="المبيعات والمرتجعات" className="flex gap-2 border-b border-line">
+        <Link to="/shop/sales" aria-current="page" className="border-b-2 border-brand px-4 py-3 text-sm font-extrabold text-brand">المبيعات</Link>
+        <Link to="/shop/returns" className="px-4 py-3 text-sm font-bold text-ink-2 hover:text-brand">المرتجعات</Link>
+      </nav>
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div role="group" aria-label="الفترة" className="flex rounded-md border border-line bg-card p-1">
@@ -148,7 +163,7 @@ export function SalesPage() {
       {/* Totals of the filtered set */}
       <section aria-label="إجماليات المبيعات" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="عدد الفواتير" amount={`${filtered.length}`} tone="brand" icon="receipt" />
-        <SummaryCard label="إجمالي المبيعات" amount={formatEgp(total)} tone="pos" icon="chart" />
+        <SummaryCard label="صافي المبيعات" amount={formatEgp(total)} tone="pos" icon="chart" sub="بعد خصم المرتجعات المسجلة في الفترة" />
         <SummaryCard
           label="الربح الإجمالي التقديري"
           amount={formatEgp(profit.profitPiastres)}
@@ -260,7 +275,7 @@ export function SalesPage() {
         {/* Sold items report */}
         <section aria-labelledby="sold-h">
           <h2 id="sold-h" className="mb-3 text-lg font-extrabold">
-            القطع المباعة <span className="text-sm font-bold text-ink-3">(مضبوطة على التصفية)</span>
+            صافي القطع <span className="text-sm font-bold text-ink-3">(بعد احتساب المرتجعات للفترة)</span>
           </h2>
           {sold.length === 0 ? (
             <EmptyState icon="box" title="لا توجد مبيعات في هذه التصفية" description="غيّر الفترة أو طريقة الدفع." />

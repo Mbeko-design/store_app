@@ -10,6 +10,7 @@ import {
   receiptTotal,
   receiptsByMethod,
   receiptsInRange,
+  returnableQuantity,
   salesProfit,
   removeLine,
   setLineQty,
@@ -27,7 +28,7 @@ import {
   stockCostValue,
   totalAfterDiscount,
 } from "./index";
-import type { Product, Receipt, ShopAsset, StockMove } from "./types";
+import type { Product, Receipt, SaleReturn, ShopAsset, StockMove } from "./types";
 
 // ---------- fixtures ----------
 
@@ -69,6 +70,26 @@ const receipt = (
   createdAtIso: iso,
 });
 
+const saleReturn = (
+  id: string,
+  lines: Array<[productId: string, qty: number, priceEgp: number, costEgp?: number]>,
+  iso = "2026-10-04T12:00:00.000Z",
+): SaleReturn => ({
+  id,
+  number: Number(id.replace(/\D/g, "")),
+  lines: lines.map(([productId, qty, priceEgp, costEgp]) => ({
+    productId,
+    barcode: `BC${productId}`,
+    name: `منتج ${productId}`,
+    pricePiastres: priceEgp * 100,
+    ...(costEgp !== undefined ? { costPiastres: costEgp * 100 } : {}),
+    qty,
+  })),
+  totalPiastres: lines.reduce((sum, [, qty, priceEgp]) => sum + qty * priceEgp * 100, 0),
+  paymentMethod: "cash",
+  createdAtIso: iso,
+});
+
 // ---------- stock ----------
 
 describe("stockOnHand", () => {
@@ -85,6 +106,11 @@ describe("stockOnHand", () => {
       move("b", "in", 99), // other product — ignored
     ];
     expect(stockOnHand(moves, "a")).toBe(10 - 3 - 2 + 5);
+  });
+
+  it("returns add their quantities back to stock", () => {
+    const moves = [move("a", "in", 5), move("a", "sale", 3), move("a", "return", 1)];
+    expect(stockOnHand(moves, "a")).toBe(3);
   });
 
   it("each move counted exactly once (no double counting)", () => {
@@ -163,6 +189,15 @@ describe("receipt totals & aggregates", () => {
     expect(averageReceipt([])).toBe(0);
   });
 
+  it("subtracts return value and quantity from sales aggregates without changing older receipts", () => {
+    const sold = receipt("r1", [["a", 3, 100]]);
+    const returned = saleReturn("return1", [["a", 1, 100]]);
+    expect(salesTotal([sold], [returned])).toBe(200_00);
+    expect(soldItems([sold], [returned])[0]).toMatchObject({ qty: 2, revenuePiastres: 200_00 });
+    expect(returnableQuantity("a", [sold], [returned])).toBe(2);
+    expect(returnableQuantity("b", [sold], [])).toBe(0);
+  });
+
   it("filter by payment method", () => {
     expect(receiptsByMethod([r1, r2], "cash")).toHaveLength(1);
     expect(receiptsByMethod([r1, r2], "vodafone")[0]?.id).toBe("r2");
@@ -200,6 +235,13 @@ describe("receipt totals & aggregates", () => {
     discounted.discountPiastres = 10_00;
     discounted.totalPiastres -= discounted.discountPiastres;
     expect(salesProfit([discounted], [p("a", 100, "BCa", 60)]).profitPiastres).toBe(30_00);
+  });
+
+  it("subtracts the returned margin using the return-time cost snapshot", () => {
+    const sold = receipt("r1", [["a", 2, 100]]);
+    sold.lines[0]!.costPiastres = 60_00;
+    const returned = saleReturn("return1", [["a", 1, 100, 70]]);
+    expect(salesProfit([sold], [], [returned]).profitPiastres).toBe(50_00);
   });
 });
 

@@ -2,7 +2,7 @@ import { LOW_STOCK_THRESHOLD, type Product, type StockMove, type StockStatus } f
 
 /**
  * Stock math — THE single place stock is computed.
- * stock = Σ(in) + Σ(adjust, signed) − Σ(sale).  Every move counts once.
+ * stock = Σ(in) + Σ(return) + Σ(adjust, signed) − Σ(sale).  Every move counts once.
  */
 export function stockOnHand(moves: StockMove[], productId: string): number {
   let stock = 0;
@@ -10,6 +10,7 @@ export function stockOnHand(moves: StockMove[], productId: string): number {
     if (m.productId !== productId) continue;
     if (m.type === "in") stock += m.qty;
     else if (m.type === "sale") stock -= m.qty;
+    else if (m.type === "return") stock += m.qty;
     else stock += m.qty; // adjust (signed)
   }
   return stock;
