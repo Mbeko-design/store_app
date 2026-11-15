@@ -42,7 +42,7 @@ Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives i
 | 6 | ملخص الحسابات (Summary table) | `/summary` | totals + detailed table with expandable rows + pagination |
 | 7 | مقياس العجز (Deficit meter) | `/deficit` | equation, progress bar, itemized inputs, auditable result line |
 | 8 | الإعدادات (Settings) | `/settings` | profile, list items (unimplemented ⇒ disabled "قريباً"), preference cards, data/storage |
-| 9 | لوحة المتجر (Shop dashboard) | `/shop` | stock value, sales snapshot, restock alerts, recent receipts |
+| 9 | لوحة المتجر (Shop dashboard) | `/shop` | stock value, sales snapshot, restock alerts, recent sale and return invoices |
 | 10 | المنتجات (Products) | `/shop/products` | register by **barcode scan**, edit name/price, stock shortcuts, search |
 | 11 | نقطة البيع (POS) | `/shop/pos` | scan → cart → save receipt; unknown barcode opens registration (prefilled) |
 | 12 | المخزون (Inventory) | `/shop/inventory` | stock levels, stock-in (إدخال), physical count (جرد), low/out filters |

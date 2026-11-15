@@ -48,6 +48,49 @@ export function returnsTotal(returns: SaleReturn[]): number {
   return returns.reduce((sum, record) => sum + record.totalPiastres, 0);
 }
 
+export interface RecentShopInvoice {
+  id: string;
+  kind: "sale" | "return";
+  number: number;
+  totalPiastres: number;
+  paymentMethod: PaymentMethod;
+  createdAtIso: string;
+  lineCount: number;
+  pieces: number;
+}
+
+/** Latest sale and return documents together for the shop dashboard. */
+export function recentShopInvoices(
+  receipts: Receipt[],
+  returns: SaleReturn[],
+  limit = 5,
+): RecentShopInvoice[] {
+  return [
+    ...receipts.map((receipt): RecentShopInvoice => ({
+      id: receipt.id,
+      kind: "sale",
+      number: receipt.number,
+      totalPiastres: receipt.totalPiastres,
+      paymentMethod: receipt.paymentMethod,
+      createdAtIso: receipt.createdAtIso,
+      lineCount: receipt.lines.length,
+      pieces: receipt.lines.reduce((sum, line) => sum + line.qty, 0),
+    })),
+    ...returns.map((record): RecentShopInvoice => ({
+      id: record.id,
+      kind: "return",
+      number: record.number,
+      totalPiastres: record.totalPiastres,
+      paymentMethod: record.paymentMethod,
+      createdAtIso: record.createdAtIso,
+      lineCount: record.lines.length,
+      pieces: record.lines.reduce((sum, line) => sum + line.qty, 0),
+    })),
+  ]
+    .sort((a, b) => b.createdAtIso.localeCompare(a.createdAtIso) || b.number - a.number)
+    .slice(0, Math.max(0, limit));
+}
+
 export function salesTotal(receipts: Receipt[], returns: SaleReturn[] = []): number {
   return receipts.reduce((sum, r) => sum + r.totalPiastres, 0) - returnsTotal(returns);
 }

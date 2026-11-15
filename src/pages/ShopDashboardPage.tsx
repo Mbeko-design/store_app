@@ -7,6 +7,7 @@ import { SkeletonCard, SkeletonList, LoadingBlock } from "../components/Skeleton
 import { SummaryCard } from "../components/SummaryCard";
 import { useLoading } from "../hooks/useData";
 import { useShopView } from "../hooks/useShop";
+import { recentShopInvoices } from "../shop";
 import { formatEgp, formatDateTime, formatTime } from "../utils/format";
 
 /** لوحة المتجر — stock value, sales snapshot, restock alerts, recent receipts. */
@@ -29,7 +30,7 @@ export function ShopDashboardPage() {
   }
   if (!view) return null;
 
-  if (view.totals.products === 0) {
+  if (view.totals.products === 0 && view.receipts.length === 0 && view.returns.length === 0) {
     return (
       <EmptyState
         icon="box"
@@ -45,7 +46,7 @@ export function ShopDashboardPage() {
     );
   }
 
-  const recent = view.receipts.slice(0, 5);
+  const recent = recentShopInvoices(view.receipts, view.returns);
   const low = view.low.slice(0, 5);
 
   return (
@@ -141,7 +142,7 @@ export function ShopDashboardPage() {
               آخر الفواتير
             </h2>
             <Link to="/shop/sales" className="text-sm font-bold text-cash underline underline-offset-4">
-              كل المبيعات
+              المبيعات والمرتجعات
             </Link>
           </div>
           {recent.length === 0 ? (
@@ -149,22 +150,27 @@ export function ShopDashboardPage() {
           ) : (
             <ul className="divide-y divide-line rounded-lg border border-line bg-card">
               {recent.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 p-4">
+                <li key={`${r.kind}-${r.id}`} className="flex items-center justify-between gap-3 p-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className="grid size-9 shrink-0 place-items-center rounded-md bg-brand/8 text-brand">
                       <Icon name="receipt" size={16} />
                     </span>
                     <div className="min-w-0">
                       <p className="text-sm font-bold">
-                        فاتورة <span className="bidi">#{r.number}</span> ·{" "}
+                        {r.kind === "return" ? "فاتورة مرتجع" : "فاتورة بيع"}{" "}
+                        <span className="bidi">#{r.number}</span> ·{" "}
                         <span className="bidi font-mono text-xs text-ink-3">{formatTime(r.createdAtIso)}</span>
                       </p>
-                      <p className="text-xs text-ink-3">{formatDateTime(r.createdAtIso)}</p>
+                      <p className="text-xs text-ink-3">
+                        {formatDateTime(r.createdAtIso)} · {r.lineCount} صنف · {r.pieces} قطعة
+                      </p>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <PaymentBadge method={r.paymentMethod} />
-                    <span className="bidi text-sm font-extrabold text-pos">{formatEgp(r.totalPiastres)}</span>
+                    <span className={`bidi text-sm font-extrabold ${r.kind === "return" ? "text-neg" : "text-pos"}`}>
+                      {r.kind === "return" ? "−" : ""}{formatEgp(r.totalPiastres)}
+                    </span>
                   </div>
                 </li>
               ))}

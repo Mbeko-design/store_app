@@ -10,6 +10,7 @@ import {
   receiptTotal,
   receiptsByMethod,
   receiptsInRange,
+  recentShopInvoices,
   returnableQuantity,
   salesProfit,
   removeLine,
@@ -196,6 +197,19 @@ describe("receipt totals & aggregates", () => {
     expect(soldItems([sold], [returned])[0]).toMatchObject({ qty: 2, revenuePiastres: 200_00 });
     expect(returnableQuantity("a", [sold], [returned])).toBe(2);
     expect(returnableQuantity("b", [sold], [])).toBe(0);
+  });
+
+  it("shows sale invoices and return invoices together in newest-first order", () => {
+    const olderSale = receipt("r1", [["a", 1, 100]], "cash", "2026-10-02T12:00:00.000Z");
+    const newerSale = receipt("r2", [["a", 2, 100]], "cash", "2026-10-04T12:00:00.000Z");
+    const returned = saleReturn("return1", [["a", 1, 100]], "2026-10-05T12:00:00.000Z");
+
+    expect(recentShopInvoices([olderSale, newerSale], [returned])).toMatchObject([
+      { kind: "return", id: "return1", totalPiastres: 10_000, pieces: 1 },
+      { kind: "sale", id: "r2", totalPiastres: 20_000, pieces: 2 },
+      { kind: "sale", id: "r1" },
+    ]);
+    expect(recentShopInvoices([olderSale, newerSale], [returned], 2)).toHaveLength(2);
   });
 
   it("filter by payment method", () => {
