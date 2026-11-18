@@ -93,8 +93,31 @@ export interface StockMove {
   /** Receipt or return that produced this move (audit trail). */
   refReceiptId?: string;
   refReturnId?: string;
+  refSupplierInvoiceId?: string;
   supplierName?: string;
   note?: string;
+  createdAtIso: string;
+}
+
+/** A purchase invoice received from a supplier. */
+export interface SupplierInvoiceLine {
+  productId: string;
+  name: string;
+  barcode: string;
+  qty: number;
+  unitCostPiastres: number;
+  lineTotalPiastres: number;
+}
+
+export interface SupplierInvoice {
+  id: string;
+  number: number;
+  supplierName: string;
+  reference?: string;
+  lines: SupplierInvoiceLine[];
+  totalPiastres: number;
+  paidPiastres: number;
+  remainingPiastres: number;
   createdAtIso: string;
 }
 

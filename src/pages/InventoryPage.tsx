@@ -6,10 +6,11 @@ import { Icon } from "../components/Icon";
 import { LoadingBlock, SkeletonList } from "../components/Skeleton";
 import { StockBadge } from "../components/ShopBadges";
 import { StockDialog } from "../components/StockDialog";
+import { SupplierInvoiceDialog } from "../components/SupplierInvoiceDialog";
 import { AssetFormDialog } from "../components/AssetFormDialog";
 import { SummaryCard } from "../components/SummaryCard";
 import { useLoading } from "../hooks/useData";
-import { useShopView } from "../hooks/useShop";
+import { useShopView, useSupplierInvoices } from "../hooks/useShop";
 import type { Product, ShopAsset } from "../shop/types";
 import { formatEgp } from "../utils/format";
 import { deleteAsset } from "../services/assetsService";
@@ -31,12 +32,14 @@ const FILTERS: Array<{ id: Filter; label: string }> = [
  */
 export function InventoryPage() {
   const view = useShopView();
+  const supplierInvoices = useSupplierInvoices();
   const loading = useLoading(view);
   const toast = useToast();
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
   const [target, setTarget] = useState<{ product: Product; mode: "in" | "count" } | undefined>();
   const [assetForm, setAssetForm] = useState<{ open: boolean; asset?: ShopAsset }>({ open: false });
+  const [supplierInvoiceOpen, setSupplierInvoiceOpen] = useState(false);
   const [deleting, setDeleting] = useState<ShopAsset | undefined>();
   const [delBusy, setDelBusy] = useState(false);
 
@@ -99,10 +102,16 @@ export function InventoryPage() {
           <h2 id="capital-heading" className="text-lg font-extrabold">
             رأس المال
           </h2>
-          <Button type="button" variant="primary" className="h-10" onClick={() => setAssetForm({ open: true })}>
-            <Icon name="plus" size={16} />
-            إضافة معدة
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" className="h-10" onClick={() => setSupplierInvoiceOpen(true)}>
+              <Icon name="plus" size={16} />
+              فاتورة مورد
+            </Button>
+            <Button type="button" variant="primary" className="h-10" onClick={() => setAssetForm({ open: true })}>
+              <Icon name="plus" size={16} />
+              إضافة معدة
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -209,6 +218,45 @@ export function InventoryPage() {
         </div>
       </section>
 
+      <section aria-labelledby="supplier-balances-heading" className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="supplier-balances-heading" className="text-lg font-extrabold">فواتير الموردين والمتأخرات</h2>
+          <Button type="button" variant="primary" className="h-10" onClick={() => setSupplierInvoiceOpen(true)}>
+            <Icon name="plus" size={16} />
+            تسجيل فاتورة مورد
+          </Button>
+        </div>
+        {(!supplierInvoices || supplierInvoices.length === 0) ? (
+          <p className="rounded-lg border border-line bg-card px-4 py-4 text-sm text-ink-3">لا توجد فواتير موردين مسجلة بعد.</p>
+        ) : (
+          <ul className="divide-y divide-line rounded-lg border border-line bg-card" aria-label="فواتير الموردين">
+            {supplierInvoices.slice(0, 8).map((invoice) => (
+              <li key={invoice.id} className="grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="font-bold">{invoice.supplierName}</p>
+                  <p className="text-xs text-ink-3">
+                    فاتورة #{invoice.number}{invoice.reference ? ` · ${invoice.reference}` : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-3">{invoice.lines.length} منتجات · {invoice.lines.reduce((sum, line) => sum + line.qty, 0)} قطعة</p>
+                </div>
+                <div className="text-end">
+                  <p className="text-xs text-ink-3">الإجمالي</p>
+                  <p className="bidi font-extrabold">{formatEgp(invoice.totalPiastres)}</p>
+                </div>
+                <div className="text-end">
+                  <p className="text-xs text-ink-3">المدفوع</p>
+                  <p className="bidi font-extrabold text-pos">{formatEgp(invoice.paidPiastres)}</p>
+                </div>
+                <div className="text-end">
+                  <p className="text-xs text-ink-3">المتبقي</p>
+                  <p className={`bidi font-extrabold ${invoice.remainingPiastres > 0 ? "text-neg" : "text-pos"}`}>{formatEgp(invoice.remainingPiastres)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <div className="flex flex-wrap items-center gap-3">
         <div role="group" aria-label="تصفية المخزون" className="flex rounded-md border border-line bg-card p-1">
           {FILTERS.map((f) => (
@@ -296,6 +344,11 @@ export function InventoryPage() {
         product={target?.product}
         stock={view.rows.find((r) => r.product.id === target?.product.id)?.stock ?? 0}
         onClose={() => setTarget(undefined)}
+      />
+
+      <SupplierInvoiceDialog
+        open={supplierInvoiceOpen}
+        onClose={() => setSupplierInvoiceOpen(false)}
       />
 
       <AssetFormDialog

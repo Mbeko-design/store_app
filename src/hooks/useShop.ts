@@ -24,6 +24,8 @@ import { listAssets } from "../services/assetsService";
 import { listProducts } from "../services/productsService";
 import { allStockMoves, listReceipts } from "../services/receiptsService";
 import { listReturns } from "../services/returnsService";
+import { listSupplierInvoices } from "../services/supplierInvoicesService";
+import type { SupplierInvoice } from "../shop/types";
 
 /**
  * Shop data hooks — glue between IndexedDB and the PURE shop module.
@@ -49,6 +51,10 @@ export function useReceipts(): Receipt[] | undefined {
 
 export function useReturns(): SaleReturn[] | undefined {
   return useLiveQuery(() => listReturns(), []);
+}
+
+export function useSupplierInvoices(): SupplierInvoice[] | undefined {
+  return useLiveQuery(() => listSupplierInvoices(), []);
 }
 
 export interface ShopView {

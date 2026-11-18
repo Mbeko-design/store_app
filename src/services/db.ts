@@ -1,6 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type { Account, Operation } from "../accounting/types";
-import type { Product, Receipt, SaleReturn, ShopAsset, StockMove } from "../shop/types";
+import type { Product, Receipt, SaleReturn, ShopAsset, StockMove, SupplierInvoice } from "../shop/types";
 
 /**
  * Basata Tech (بساطه تك) persistence: IndexedDB via Dexie — LOCAL ONLY.
@@ -8,7 +8,7 @@ import type { Product, Receipt, SaleReturn, ShopAsset, StockMove } from "../shop
  * No backend, no sync: data lives in this browser/device (see README "Known limitations").
  */
 export interface SettingsRow {
-  key: "previewData" | "receiptSeq" | "returnSeq";
+  key: "previewData" | "receiptSeq" | "returnSeq" | "supplierInvoiceSeq";
   value: string; // "1" | "0" | sequence number as string
 }
 
@@ -29,6 +29,7 @@ class CashyDB extends Dexie {
   returns!: Table<SaleReturn, string>;
   stockMoves!: Table<StockMove, string>;
   shopAssets!: Table<ShopAsset, string>;
+  supplierInvoices!: Table<SupplierInvoice, string>;
 
   constructor() {
     super("cashy");
@@ -71,6 +72,14 @@ class CashyDB extends Dexie {
       returns: "id, number, createdAtIso",
       stockMoves: "id, productId, createdAtIso, [productId+type]",
       shopAssets: "id, createdAtIso",
+    });
+    this.version(6).stores({
+      products: "id, barcode, createdAtIso",
+      receipts: "id, number, createdAtIso",
+      returns: "id, number, createdAtIso",
+      stockMoves: "id, productId, createdAtIso, [productId+type]",
+      shopAssets: "id, createdAtIso",
+      supplierInvoices: "id, number, supplierName, createdAtIso",
     });
   }
 }
