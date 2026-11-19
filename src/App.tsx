@@ -17,6 +17,7 @@ import { PosPage } from "./pages/PosPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { SalesPage } from "./pages/SalesPage";
 import { ReturnsPage } from "./pages/ReturnsPage";
+import { BackupSyncBridge } from "./components/BackupSyncBridge";
 
 /** Content (error-boundary wrapped). */
 function Page() {
@@ -53,6 +54,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ToastProvider>
+        <BackupSyncBridge />
         <AppShell>
           <Page />
         </AppShell>

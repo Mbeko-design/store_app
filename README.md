@@ -25,8 +25,8 @@ pnpm preview        # serve the production build
 pnpm icons          # regenerate the PWA icons (scripts/gen-icons.py, needs Pillow)
 ```
 
-Requirements: Node ≥ 20, pnpm. No backend, no database server — data lives in the browser
-(IndexedDB).
+Requirements: Node ≥ 20, pnpm. Main application data lives in browser IndexedDB. Optional
+encrypted cloud backup uses Vercel Functions/Blob and Google Drive.
 
 ---
 
@@ -224,7 +224,10 @@ during the additive database upgrade and can be reassigned from the inventory eq
 - The app does not create sample records for new users.
 - Updates preserve all existing accounts, operations, products, receipts, settings, and profile
   information in IndexedDB. No startup migration deletes local records.
-- Data remains local to each browser/device in IndexedDB; it does not sync between devices.
+- IndexedDB remains the primary database on each browser/device; optional encrypted backup
+  copies do not provide live multi-device synchronization.
+- Settings can save a daily JSON backup into a user-selected computer folder. The browser must
+  be open, and the folder permission must remain available; the JSON file is not encrypted.
 
 ---
 
@@ -254,7 +257,8 @@ SPA fallback is pre-configured, so refreshing on **any** deep link works:
    - Framework preset: `Vite`
    - Build Command: `npm run build` (or `pnpm build`)
    - Output directory: `dist`
-4. **No environment variables are required** (fully client-side — see `.env.example`).
+4. Configure the server-only variables and private Blob storage listed in
+   [Cloud backup setup](#cloud-backup-setup).
 5. Press **Deploy**, wait for the green check, open the printed URL.
 
 ### Option B — Vercel CLI
@@ -264,6 +268,35 @@ npm i -g vercel        # or: pnpm add -g vercel
 vercel                 # create/link the project — accept defaults (vercel.json applies)
 vercel --prod          # production deploy
 ```
+
+### Cloud backup setup
+
+The local database remains the source of truth. When connected, the browser encrypts each
+backup with the user's passphrase before sending it to a private Vercel Blob. A Vercel Schedule
+uploads that encrypted snapshot to the linked Google Drive every Friday at 22:00 Africa/Cairo.
+The decryption key never leaves the browser. The backup passphrase cannot be recovered if lost.
+
+1. In the Vercel project, enable the **Schedules** beta for the team, then create a **private
+   Blob** store and connect it to the Production environment. This provides the function with
+   private Blob access and enables the weekly trigger.
+2. In Google Cloud Console, create an OAuth **Web application** client and configure the consent
+   screen. Add the production redirect URI:
+   `https://YOUR_PRODUCTION_DOMAIN/api/google/auth/callback`
+3. Add these server-only variables to Vercel Production:
+   - `APP_ORIGIN` — exact production origin, without a trailing slash.
+   - `APP_SESSION_SECRET` — a newly generated random secret (at least 32 bytes).
+   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` — from the OAuth Web client.
+4. Deploy Production. Open Settings, set and safely retain a backup passphrase, connect Google
+   Drive, then use **نسخ الآن إلى Google Drive** to test the first backup. Subsequent local data
+   changes sync an encrypted snapshot to Vercel; the weekly schedule archives it in Drive.
+5. To restore after clearing browser data or changing devices, connect the same Google account,
+   select **استعادة من Google Drive**, and enter the original passphrase.
+
+The app requests browser persistent-storage permission from Settings to reduce automatic
+eviction. This does not protect against manually cleared site data, lost devices, or storage
+failure; retain the Drive backup and its passphrase.
+Changing `APP_SESSION_SECRET` invalidates sessions and the encrypted stored Google refresh
+token; reconnect Google Drive afterward.
 
 ### Post-deploy checklist
 
@@ -275,10 +308,9 @@ vercel --prod          # production deploy
 
 ## Security & environment
 
-- The repository contains **no secrets and no API keys** — بساطه تك calls no external services
-  and stores nothing server-side (all data lives in the visitor's browser, IndexedDB).
-- `.env.example` documents that **zero variables are needed**; real `.env*` files are
-  git-ignored — only `.env.example` is committed.
+- The repository contains **no secrets and no API keys**. Google OAuth credentials and session
+  secrets belong only in the Vercel Production environment.
+- `.env.example` lists variable names/placeholders only; real `.env*` files are git-ignored.
 - Reminder for contributors: Vite exposes only `VITE_*`-prefixed variables to client code —
   never place anything sensitive there.
 
@@ -286,10 +318,14 @@ vercel --prod          # production deploy
 
 ## Known limitations
 
-1. **Local-only storage.** Everything lives in this browser's IndexedDB. There is no server or
-   automatic sync. Settings can export and restore a versioned JSON backup; keep that file in a
-   safe location (for example, Google Drive). Clearing browser data deletes the local copy.
-2. **One device, one browser profile.** Opening the app in another browser shows an empty ledger.
+1. **Local primary data.** Main data remains in this browser's IndexedDB; it does not sync as a
+   live shared database between devices. The optional encrypted Vercel mirror and weekly Google
+   Drive backups provide recovery copies. A daily local-folder backup is also available on
+   supported Chromium browsers, but only runs while the app is open. Clearing browser data still
+   deletes the IndexedDB copy and its saved folder permission; the backup files in the chosen
+   computer folder remain.
+2. **One device, one browser profile.** Opening the app in another browser shows an empty ledger
+   until you connect Drive and restore a backup.
 3. **No operation editing/deletion.** Entries are append-only in v1; fix mistakes by recording the
    opposite entry (or wait for a future reversal feature).
 4. **Logout is disabled** (shown as "قريباً") — there is no authentication in a single-user local app.
