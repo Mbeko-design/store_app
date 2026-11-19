@@ -156,9 +156,9 @@ and its own pure module (`src/shop/`). Shop activity **never touches** the Vodaf
   browser print dialog. Entering an initial quantity of 6 prints six labels, two 38 × 12.5 mm
   labels per 38 × 25 mm page; an odd final copy uses the first half of a page. Quantity 0 skips
   printing. Stock-in movements also print one label per incoming piece;
-  physical stock counts do not print. Existing labels can be printed again from the product list
-  (one per piece currently in stock). The Xprinter XP-233B must be installed as a system printer
-  and configured for the matching label stock.
+  physical stock counts do not print. From the product list, choose any label count independently
+  of the current stock; printing does not change inventory. The Xprinter XP-233B must be installed
+  as a system printer and configured for the matching label stock.
 - Wholesale cost is used for رأس المال only; the POS uses and displays the sell price only.
   Inventory shows wholesale stock value and the detailed list of fixed equipment/assets.
 - Scanning an already-registered barcode opens a stock-in shortcut instead of failing; duplicates

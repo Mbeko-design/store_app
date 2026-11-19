@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
+import { BarcodeLabelDialog } from "../components/BarcodeLabelDialog";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { EmptyState } from "../components/EmptyState";
 import { Icon } from "../components/Icon";
@@ -12,7 +13,6 @@ import { useLoading } from "../hooks/useData";
 import { useArchivedProducts, useShopView } from "../hooks/useShop";
 import type { Product } from "../shop/types";
 import { formatEgp } from "../utils/format";
-import { printBarcodeLabel, reserveBarcodePrintWindow } from "../utils/printBarcodeLabel";
 import { archiveProduct, restoreProduct } from "../services/productsService";
 
 /** المنتجات — catalog list, search, register (scan) / edit, stock shortcuts. */
@@ -27,6 +27,7 @@ export function ProductsPage() {
   const [editing, setEditing] = useState<Product | undefined>(undefined);
   const [presetBarcode, setPresetBarcode] = useState("");
   const [stockTarget, setStockTarget] = useState<{ product: Product; mode: "in" | "count" } | undefined>();
+  const [labelTarget, setLabelTarget] = useState<{ product: Product; stock: number } | undefined>();
   const [archiving, setArchiving] = useState<Product | undefined>();
   const [archiveBusy, setArchiveBusy] = useState(false);
   const [restoringId, setRestoringId] = useState<string | undefined>();
@@ -44,21 +45,6 @@ export function ProductsPage() {
     setEditing(undefined);
     setPresetBarcode("");
     setFormOpen(true);
-  };
-
-  const printBarcode = async (product: Product, copies: number) => {
-    const printWindow = reserveBarcodePrintWindow();
-    if (!printWindow) {
-      toast.error("اسمح بالنوافذ المنبثقة لطباعة ملصق الباركود.");
-      return;
-    }
-    try {
-      await printBarcodeLabel(printWindow, product, copies);
-    } catch (error) {
-      console.error("barcode label printing failed:", error);
-      printWindow.close();
-      toast.error("تعذرت طباعة ملصق الباركود.");
-    }
   };
 
   const confirmArchive = async () => {
@@ -194,10 +180,10 @@ export function ProductsPage() {
                   type="button"
                   variant="secondary"
                   className="h-9 px-2"
-                  onClick={() => printBarcode(product, stock > 0 ? stock : 1)}
+                  onClick={() => setLabelTarget({ product, stock })}
                 >
                   <Icon name="barcode" size={14} />
-                  طباعة {stock > 0 ? `${stock} ملصق` : "ملصق"}
+                  طباعة ملصقات
                 </Button>
                 <Button
                   type="button"
@@ -262,6 +248,11 @@ export function ProductsPage() {
         product={stockTarget?.product}
         stock={view.rows.find((r) => r.product.id === stockTarget?.product.id)?.stock ?? 0}
         onClose={() => setStockTarget(undefined)}
+      />
+      <BarcodeLabelDialog
+        product={labelTarget?.product}
+        stock={labelTarget?.stock ?? 0}
+        onClose={() => setLabelTarget(undefined)}
       />
       <ConfirmDialog
         open={Boolean(archiving)}
